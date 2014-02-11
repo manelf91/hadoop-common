@@ -38,6 +38,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.filecache.DistributedCache;
 import org.apache.hadoop.filecache.TaskDistributedCacheManager;
 import org.apache.hadoop.filecache.TrackerDistributedCacheManager;
@@ -199,6 +200,7 @@ public class LocalJobRunner implements JobSubmissionProtocol {
 
       public void run() {
         try {
+
           TaskAttemptID mapId = new TaskAttemptID(new TaskID(
               jobId, true, taskId), 0);
           LOG.info("Starting task: " + mapId);
@@ -564,7 +566,15 @@ public class LocalJobRunner implements JobSubmissionProtocol {
                                                                 throws IOException {
       trackerDistributedCacheManager.setArchiveSizes(jobId, sizes);
     }
-    
+
+	@Override
+	public int checkIfRelevantRowGroup(long blockId, Configuration filters) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+	
+	@Override
+	public void increaseMapFunctionTime(long time) {}
   }
 
   public LocalJobRunner(JobConf conf) throws IOException {

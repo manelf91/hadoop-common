@@ -776,8 +776,8 @@ public class NameNode implements ClientProtocol, DatanodeProtocol,
       for (Node node:excludedNodes) {
         excludedNodesSet.put(node, node);
       }
-    }
-
+    }	
+    
     stateChangeLog.debug("*BLOCK* NameNode.addBlock: "
                          +src+" for "+clientName);
     LocatedBlock locatedBlock = namesystem.getAdditionalBlock(
@@ -786,7 +786,7 @@ public class NameNode implements ClientProtocol, DatanodeProtocol,
       myMetrics.incrNumAddBlockOps();
     return locatedBlock;
   }
-
+ 
   /**
    * The client needs to give up on the block.
    */
@@ -1486,6 +1486,7 @@ public class NameNode implements ClientProtocol, DatanodeProtocol,
     try {
       StringUtils.startupShutdownMessage(NameNode.class, argv, LOG);
       NameNode namenode = createNameNode(argv, null);
+
       if (namenode != null)
         namenode.join();
     } catch (Throwable e) {

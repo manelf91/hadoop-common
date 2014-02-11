@@ -19,6 +19,7 @@
 package org.apache.hadoop.mapred;
 
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
 
 import org.apache.hadoop.util.ReflectionUtils;
 

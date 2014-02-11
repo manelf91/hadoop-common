@@ -22,7 +22,9 @@
 #
 #   JAVA_HOME        The java implementation to use.  Overrides JAVA_HOME.
 #
-#   HADOOP_CLASSPATH Extra Java CLASSPATH entries.
+HADOOP_CLASSPATH=$HADOOP_HOME/commons-primitives-1.0.jar
+HADOOP_CLASSPATH=${HADOOP_CLASSPATH}:$HADOOP_HOME/lingpipe-4.1.0.jar
+HADOOP_CLASSPATH=${HADOOP_CLASSPATH}:$HADOOP_HOME/gson-2.2.4.jar
 #
 #   HADOOP_USER_CLASSPATH_FIRST      When defined, the HADOOP_CLASSPATH is 
 #                                    added in the beginning of the global
@@ -141,7 +143,7 @@ if [ "$JAVA_HOME" = "" ]; then
 fi
 
 JAVA=$JAVA_HOME/bin/java
-JAVA_HEAP_MAX=-Xmx1000m 
+JAVA_HEAP_MAX=-Xmx3000m 
 
 # check envvars which might override default args
 if [ "$HADOOP_HEAPSIZE" != "" ]; then

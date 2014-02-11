@@ -25,6 +25,7 @@ import org.apache.hadoop.examples.terasort.TeraSort;
 import org.apache.hadoop.examples.terasort.TeraValidate;
 import org.apache.hadoop.util.ProgramDriver;
 
+
 /**
  * A description of an example program based on its class and a 
  * human-readable description.
@@ -37,6 +38,16 @@ public class ExampleDriver {
     try {
       pgd.addClass("wordcount", WordCount.class, 
                    "A map/reduce program that counts the words in the input files.");
+      pgd.addClass("wordcountmy", WordCountMy.class, 
+                   "A map/reduce program that counts the words in the input files.");
+      pgd.addClass("wordcountmyhadoop", WordCountMyHadoop.class, 
+              "A map/reduce program that counts the words in the input files.");
+      pgd.addClass("selection", Selection.class,
+              "A map/reduce program that counts the words in the input files.");
+      pgd.addClass("selectionSent", SelectionSent.class,
+              "A map/reduce program that counts the words in the input files.");
+      pgd.addClass("selectionSentHadoop", SelectionSentHadoop.class,
+              "A map/reduce program that counts the words in the input files.");
       pgd.addClass("aggregatewordcount", AggregateWordCount.class, 
                    "An Aggregate based map/reduce program that counts the words in the input files.");
       pgd.addClass("aggregatewordhist", AggregateWordHistogram.class, 
@@ -48,6 +59,7 @@ public class ExampleDriver {
       pgd.addClass("randomtextwriter", RandomTextWriter.class, 
       "A map/reduce program that writes 10GB of random textual data per node.");
       pgd.addClass("sort", Sort.class, "A map/reduce program that sorts the data written by the random writer.");
+      pgd.addClass("sort2", Sort2.class, "A map/reduce program that sorts the data written by the random writer.");
       pgd.addClass("pi", PiEstimator.class, "A map/reduce program that estimates Pi using monte-carlo method.");
       pgd.addClass("pentomino", DistributedPentomino.class,
       "A map/reduce tile laying program to find solutions to pentomino problems.");

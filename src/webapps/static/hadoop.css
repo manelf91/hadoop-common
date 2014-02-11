@@ -14,92 +14,95 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-
 body {
-  background-color : #ffffff;
-  font-family : sans-serif;
+	background-color: #ffffff;
+	font-family: sans-serif;
 }
 
 .small {
-  font-size : smaller;
+	font-size: smaller;
 }
 
-div#dfsnodetable tr#row1, div#dfstable td#col1 {
-	font-weight : bolder;
+div#dfsnodetable tr#row1,div#dfstable td#col1 {
+	font-weight: bolder;
 }
 
 div#dfstable td#col1 {
-	vertical-align : top;
+	vertical-align: top;
 }
 
 div#dfstable td#col3 {
-	text-align : right;
+	text-align: right;
 }
 
 div#dfsnodetable caption {
-	text-align : left;
+	text-align: left;
 }
 
 div#dfsnodetable a#title {
-	font-size : larger;
-	font-weight : bolder;
+	font-size: larger;
+	font-weight: bolder;
 }
 
-div#dfsnodetable td, th {
-	border-bottom-style : none;
-        padding-bottom : 4px;
-        padding-top : 4px;       
+div#dfsnodetable td,th {
+	border-bottom-style: none;
+	padding-bottom: 4px;
+	padding-top: 4px;
 }
 
-div#dfsnodetable A:link, A:visited {
-	text-decoration : none;       
+div#dfsnodetable A:link,A:visited {
+	text-decoration: none;
 }
 
-div#dfsnodetable th.header, th.headerASC, th.headerDSC {
-        padding-bottom : 8px;
-        padding-top : 8px;       
-}
-div#dfsnodetable th.header:hover, th.headerASC:hover, th.headerDSC:hover,
-                 td.name:hover {
-        text-decoration : underline;
-	cursor : pointer;
+div#dfsnodetable th.header,th.headerASC,th.headerDSC {
+	padding-bottom: 8px;
+	padding-top: 8px;
 }
 
-div#dfsnodetable td.blocks, td.size, td.pcused, td.adminstate, td.lastcontact {
-	text-align : right;
+div#dfsnodetable th.header:hover,th.headerASC:hover,th.headerDSC:hover,td.name:hover
+	{
+	text-decoration: underline;
+	cursor: pointer;
+}
+
+div#dfsnodetable td.blocks,td.size,td.pcused,td.adminstate,td.lastcontact
+	{
+	text-align: right;
 }
 
 div#dfsnodetable .rowNormal .header {
-	background-color : #ffffff;
+	background-color: #ffffff;
 }
-div#dfsnodetable .rowAlt, .headerASC, .headerDSC {
-	background-color : lightyellow;
+
+div#dfsnodetable .rowAlt,.headerASC,.headerDSC {
+	background-color: lightyellow;
 }
 
 .warning {
-        font-weight : bolder;
-        color : red;	
+	font-weight: bolder;
+	color: red;
 }
 
 div#dfstable table {
-	white-space : pre;
+	white-space: pre;
 }
 
-div#dfsnodetable td, div#dfsnodetable th, div#dfstable td {
-	padding-left : 10px;
-	padding-right : 10px;
+div#dfsnodetable td,div#dfsnodetable th,div#dfstable td {
+	padding-left: 10px;
+	padding-right: 10px;
 }
 
 td.perc_filled {
-  background-color:#AAAAFF;
+	background-color: #AAAAFF;
 }
 
 td.perc_nonfilled {
-  background-color:#FFFFFF;
+	background-color: #FFFFFF;
 }
 
 line.taskgraphline {
-  stroke-width:1;stroke-linecap:round;  
+	stroke-width: 1;
+	stroke-linecap: round;
 }
 
 #quicklinks {
@@ -131,4 +134,108 @@ line.taskgraphline {
 
 #quicklinks ul a {
 	text-decoration: underline;
+}
+
+/*
+ul.events { 
+	list-style-type: none;
+	margin: 0;
+	padding: 0 0 20px 0;
+}
+
+ul.events li {
+	-webkit-border-radius: 11px;
+	-moz-border-radius: 11px;
+	border-radius: 11px;
+	background: #eee;
+	border: 1px solid #ddd;
+	color: #707070;
+	font-size: 1.2em;
+	font-weight: bold;
+	margin-bottom: 6px;
+	padding: 3px 0;
+	position: relative;
+	text-align: center;
+}
+
+ul.events li em {
+	color: #aaa;
+	font-weight: normal;
+	font-size: 0.9em;
+}
+
+ul.intervals {
+	list-style-type: none;
+	padding: 0;
+	display: block;
+}
+
+ul.intervals li {
+	background: #fff url(/images/1x1_eee.gif) repeat-x left 10%;
+	border-right: 1px solid #ccc;
+	color: #999;
+	float: left;
+	font-size: 1.2em;
+	margin: 0;
+	padding: 15px 0;
+	text-align: center;
+	width: 9.9%;
+}
+
+ul.intervals li.first {
+	border-left: 1px solid #ccc;
+}
+
+*/
+
+.events {
+    list-style-type: none;
+    padding-bottom: 3px;
+}
+
+/* The width depends on the number of intervals. For example 100 / 7 = 14.29% -- then subtract a little bit for room for the borders */
+.mid {
+    background: #fff url(/images/1x1_eee.gif) repeat-x left 10%;
+    border-right: 1px solid #ccc;
+    color: #999;   
+    font-size: 1.2em;
+    padding: 15px 0;
+    text-align: center;
+    display:inline-block;
+    width: 10%;
+}
+.mid2 {
+
+    background: #eee;
+    color: #707070;
+    font-weight: bold;
+    margin-bottom: 6px;
+    text-align: center;
+    display: inline-block;
+    font-size: 10px;
+
+}
+
+.first {
+      background: #fff url(/images/1x1_eee.gif) repeat-x left 10%;
+    border-right: 1px solid #ccc;
+    color: #999;   
+    font-size: 1.2em;
+    padding: 15px 0;
+    text-align: center;
+    display:inline-block;
+    width: 10%;
+    border-left: 1px solid #ccc;
+}
+
+
+.popover {
+	width: 290px;
+	height: 150px;
+	max-width: 500px !important;
+}
+
+.popover-content {
+	font-size: 10px;
+	font-weight: normal;
 }

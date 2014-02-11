@@ -18,181 +18,192 @@
 
 package org.apache.hadoop.examples;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.io.IOException;
-import java.net.URI;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
-import org.apache.hadoop.filecache.DistributedCache;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.BytesWritable;
-import org.apache.hadoop.io.Writable;
-import org.apache.hadoop.io.WritableComparable;
-import org.apache.hadoop.mapred.*;
-import org.apache.hadoop.mapred.lib.IdentityMapper;
-import org.apache.hadoop.mapred.lib.IdentityReducer;
-import org.apache.hadoop.mapred.lib.InputSampler;
-import org.apache.hadoop.mapred.lib.TotalOrderPartitioner;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapred.FileInputFormat;
+import org.apache.hadoop.mapred.FileOutputFormat;
+import org.apache.hadoop.mapred.JobClient;
+import org.apache.hadoop.mapred.JobConf;
+import org.apache.hadoop.mapred.MapReduceBase;
+import org.apache.hadoop.mapred.Mapper;
+import org.apache.hadoop.mapred.OutputCollector;
+import org.apache.hadoop.mapred.Reducer;
+import org.apache.hadoop.mapred.Reporter;
+import org.apache.hadoop.mapred.lib.xInputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 
 /**
- * This is the trivial map/reduce program that does absolutely nothing
- * other than use the framework to fragment and sort the input values.
+ * This is an example Hadoop Map/Reduce application.
+ * It reads the text input files, breaks each line into words
+ * and counts them. The output is a locally sorted list of words and the 
+ * count of how often they occurred.
  *
- * To run: bin/hadoop jar build/hadoop-examples.jar sort
- *            [-m <i>maps</i>] [-r <i>reduces</i>]
- *            [-inFormat <i>input format class</i>] 
- *            [-outFormat <i>output format class</i>] 
- *            [-outKey <i>output key class</i>] 
- *            [-outValue <i>output value class</i>] 
- *            [-totalOrder <i>pcnt</i> <i>num samples</i> <i>max splits</i>]
- *            <i>in-dir</i> <i>out-dir</i> 
+ * To run: bin/hadoop jar build/hadoop-examples.jar wordcount
+ *            [-m <i>maps</i>] [-r <i>reduces</i>] <i>in-dir</i> <i>out-dir</i> 
  */
-public class Sort<K,V> extends Configured implements Tool {
-  private RunningJob jobResult = null;
+public class Sort extends Configured implements Tool {
 
-  static int printUsage() {
-    System.out.println("sort [-m <maps>] [-r <reduces>] " +
-                       "[-inFormat <input format class>] " +
-                       "[-outFormat <output format class>] " + 
-                       "[-outKey <output key class>] " +
-                       "[-outValue <output value class>] " +
-                       "[-totalOrder <pcnt> <num samples> <max splits>] " +
-                       "<input> <output>");
-    ToolRunner.printGenericCommandUsage(System.out);
-    return -1;
-  }
-
-  /**
-   * The main driver for sort program.
-   * Invoke this method to submit the map/reduce job.
-   * @throws IOException When there is communication problems with the 
-   *                     job tracker.
-   */
-  public int run(String[] args) throws Exception {
-
-    JobConf jobConf = new JobConf(getConf(), Sort.class);
-    jobConf.setJobName("sorter");
-
-    jobConf.setMapperClass(IdentityMapper.class);        
-    jobConf.setReducerClass(IdentityReducer.class);
-
-    JobClient client = new JobClient(jobConf);
-    ClusterStatus cluster = client.getClusterStatus();
-    int num_reduces = (int) (cluster.getMaxReduceTasks() * 0.9);
-    String sort_reduces = jobConf.get("test.sort.reduces_per_host");
-    if (sort_reduces != null) {
-       num_reduces = cluster.getTaskTrackers() * 
-                       Integer.parseInt(sort_reduces);
-    }
-    Class<? extends InputFormat> inputFormatClass = 
-      SequenceFileInputFormat.class;
-    Class<? extends OutputFormat> outputFormatClass = 
-      SequenceFileOutputFormat.class;
-    Class<? extends WritableComparable> outputKeyClass = BytesWritable.class;
-    Class<? extends Writable> outputValueClass = BytesWritable.class;
-    List<String> otherArgs = new ArrayList<String>();
-    InputSampler.Sampler<K,V> sampler = null;
-    for(int i=0; i < args.length; ++i) {
-      try {
-        if ("-m".equals(args[i])) {
-          jobConf.setNumMapTasks(Integer.parseInt(args[++i]));
-        } else if ("-r".equals(args[i])) {
-          num_reduces = Integer.parseInt(args[++i]);
-        } else if ("-inFormat".equals(args[i])) {
-          inputFormatClass = 
-            Class.forName(args[++i]).asSubclass(InputFormat.class);
-        } else if ("-outFormat".equals(args[i])) {
-          outputFormatClass = 
-            Class.forName(args[++i]).asSubclass(OutputFormat.class);
-        } else if ("-outKey".equals(args[i])) {
-          outputKeyClass = 
-            Class.forName(args[++i]).asSubclass(WritableComparable.class);
-        } else if ("-outValue".equals(args[i])) {
-          outputValueClass = 
-            Class.forName(args[++i]).asSubclass(Writable.class);
-        } else if ("-totalOrder".equals(args[i])) {
-          double pcnt = Double.parseDouble(args[++i]);
-          int numSamples = Integer.parseInt(args[++i]);
-          int maxSplits = Integer.parseInt(args[++i]);
-          if (0 >= maxSplits) maxSplits = Integer.MAX_VALUE;
-          sampler =
-            new InputSampler.RandomSampler<K,V>(pcnt, numSamples, maxSplits);
-        } else {
-          otherArgs.add(args[i]);
-        }
-      } catch (NumberFormatException except) {
-        System.out.println("ERROR: Integer expected instead of " + args[i]);
-        return printUsage();
-      } catch (ArrayIndexOutOfBoundsException except) {
-        System.out.println("ERROR: Required parameter missing from " +
-            args[i-1]);
-        return printUsage(); // exits
-      }
-    }
-
-    // Set user-supplied (possibly default) job configs
-    jobConf.setNumReduceTasks(num_reduces);
-
-    jobConf.setInputFormat(inputFormatClass);
-    jobConf.setOutputFormat(outputFormatClass);
-
-    jobConf.setOutputKeyClass(outputKeyClass);
-    jobConf.setOutputValueClass(outputValueClass);
-
-    // Make sure there are exactly 2 parameters left.
-    if (otherArgs.size() != 2) {
-      System.out.println("ERROR: Wrong number of parameters: " +
-          otherArgs.size() + " instead of 2.");
-      return printUsage();
-    }
-    FileInputFormat.setInputPaths(jobConf, otherArgs.get(0));
-    FileOutputFormat.setOutputPath(jobConf, new Path(otherArgs.get(1)));
-
-    if (sampler != null) {
-      System.out.println("Sampling input to effect total-order sort...");
-      jobConf.setPartitionerClass(TotalOrderPartitioner.class);
-      Path inputDir = FileInputFormat.getInputPaths(jobConf)[0];
-      inputDir = inputDir.makeQualified(inputDir.getFileSystem(jobConf));
-      Path partitionFile = new Path(inputDir, "_sortPartitioning");
-      TotalOrderPartitioner.setPartitionFile(jobConf, partitionFile);
-      InputSampler.<K,V>writePartitionFile(jobConf, sampler);
-      URI partitionUri = new URI(partitionFile.toString() +
-                                 "#" + "_sortPartitioning");
-      DistributedCache.addCacheFile(partitionUri, jobConf);
-      DistributedCache.createSymlink(jobConf);
-    }
-
-    System.out.println("Running on " +
-        cluster.getTaskTrackers() +
-        " nodes to sort from " + 
-        FileInputFormat.getInputPaths(jobConf)[0] + " into " +
-        FileOutputFormat.getOutputPath(jobConf) +
-        " with " + num_reduces + " reduces.");
-    Date startTime = new Date();
-    System.out.println("Job started: " + startTime);
-    jobResult = JobClient.runJob(jobConf);
-    Date end_time = new Date();
-    System.out.println("Job ended: " + end_time);
-    System.out.println("The job took " + 
-        (end_time.getTime() - startTime.getTime()) /1000 + " seconds.");
-    return 0;
-  }
+	/**
+	 * Counts the words in each line.
+	 * For each line of input, break the line into words and emit them as
+	 * (<b>word</b>, <b>1</b>).
+	 */
+	public static class MapClass extends MapReduceBase
+	implements Mapper<LongWritable, Text, Text, Text> {
 
 
+		private final static IntWritable one = new IntWritable(1);
+		private Text word = new Text();
 
-  public static void main(String[] args) throws Exception {
-    int res = ToolRunner.run(new Configuration(), new Sort(), args);
-    System.exit(res);
-  }
+		public void map(LongWritable key, Text value, 
+				OutputCollector<Text, Text> output, 
+				Reporter reporter) throws IOException {
+			String line = value.toString();
 
-  /**
-   * Get the last job that was run using this instance.
-   * @return the results of the last job that was run
-   */
-  public RunningJob getResult() {
-    return jobResult;
-  }
+			String keyS = line.substring(0, line.indexOf(";$;#;"));
+
+			word.set(keyS);
+			output.collect(word, new Text(line));
+		}
+	}
+
+	/**
+	 * A reducer class that just emits the sum of the input values.
+	 */
+	public static class Reduce extends MapReduceBase
+	implements Reducer<Text, Text, Text, Text> {
+
+		public void reduce(Text key, Iterator<Text> values,
+				OutputCollector<Text, Text> output, 
+				Reporter reporter) throws IOException {
+			while (values.hasNext()) {
+				String valueS = values.next().toString();
+				output.collect(new Text(valueS), new Text(""));
+			}
+		}
+	}
+
+	static int printUsage() {
+		System.out.println("wordcount [-m <maps>] [-r <reduces>] <input> <output>");
+		ToolRunner.printGenericCommandUsage(System.out);
+		return -1;
+	}
+
+	/**
+	 * The main driver for word count map/reduce program.
+	 * Invoke this method to submit the map/reduce job.
+	 * @throws IOException When there is communication problems with the 
+	 *                     job tracker.
+	 */
+	public int run(String[] args) throws Exception {
+		JobConf conf = new JobConf(getConf(), Sort.class);
+
+		/*mgferreira*/
+		String jobName = args[0];
+
+		conf.setInt("mapred.tasktracker.map.tasks.maximum", 1);
+		conf.setIfUnset("useIndexes", "false");
+		conf.setBooleanIfUnset("equal.splits", true);
+		conf.setIfUnset("blocks.per.split", "1");
+		
+		String relevantAttrs = "";
+		String filteredAttrs = "";
+
+		BufferedReader br = new BufferedReader(new FileReader(args[1]));
+		String pred;
+		int n = 0;
+		while ((pred = br.readLine()) != null) {
+			String absAttr = "";
+			if(!pred.contains(" ")){
+				absAttr = pred;
+			}
+			else {
+				int indexOfFirstSpace = pred.indexOf(" ");
+				int indexOfSecondSpace = pred.indexOf(" ",indexOfFirstSpace+1);
+
+				absAttr = new String(pred.substring(0, indexOfFirstSpace));
+				String relAttr = new String(pred.substring(indexOfFirstSpace+1, indexOfSecondSpace));
+				filteredAttrs += relAttr + ",";
+				String filter = new String(pred.substring(indexOfSecondSpace+1));
+				System.out.println("filter" + relAttr +": " + n + " " + filter);
+				conf.setIfUnset("filter" + relAttr, n + " " + filter);
+			}
+			relevantAttrs += absAttr + ",";
+			n++;
+		}
+		br.close();
+
+		System.out.println("relevantAttrs: " + relevantAttrs);
+		System.out.println("filteredAttrs: " + filteredAttrs);
+		conf.setIfUnset("relevantAttrs", relevantAttrs);
+		if (!filteredAttrs.equals("")) {
+			conf.setIfUnset("filteredAttrs", filteredAttrs);
+		}
+
+		String[] argsN = new String[args.length-2];
+		for (int i = 2; i < args.length; i++) {
+			argsN[i-2] = args[i];
+		}
+
+		// the keys are words (strings)
+		conf.setOutputKeyClass(Text.class);
+		// the values are counts (ints)
+		conf.setOutputValueClass(Text.class);
+
+		conf.setMapperClass(MapClass.class);
+		conf.setReducerClass(Reduce.class);
+		conf.setInputFormat(xInputFormat.class);
+
+		List<String> other_args = new ArrayList<String>();
+		for(int i=0; i < argsN.length; ++i) {
+			try {
+				if ("-m".equals(argsN[i])) {
+					conf.setNumMapTasks(Integer.parseInt(argsN[++i]));
+				} else if ("-r".equals(argsN[i])) {
+					conf.setNumReduceTasks(Integer.parseInt(argsN[++i]));
+				} else {
+					other_args.add(argsN[i]);
+				}
+			} catch (NumberFormatException except) {
+				System.out.println("ERROR: Integer expected instead of " + argsN[i]);
+				return printUsage();
+			} catch (ArrayIndexOutOfBoundsException except) {
+				System.out.println("ERROR: Required parameter missing from " +
+						argsN[i-1]);
+				return printUsage();
+			}
+		}
+		// Make sure there are exactly 2 parameters left.
+		if (other_args.size() != 2) {
+			System.out.println("ERROR: Wrong number of parameters: " +
+					other_args.size() + " instead of 2.");
+			return printUsage();
+		}
+		FileInputFormat.setInputPaths(conf, other_args.get(0));
+		FileOutputFormat.setOutputPath(conf, new Path(other_args.get(1)));
+
+		JobClient.runJob(conf);
+		return 0;
+	}
+
+
+	public static void main(String[] args) throws Exception {
+		int res = ToolRunner.run(new Configuration(), new Sort(), args);
+		System.exit(res);
+	}
+
 }

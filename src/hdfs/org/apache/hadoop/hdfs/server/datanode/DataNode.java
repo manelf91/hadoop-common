@@ -131,6 +131,7 @@ import org.apache.hadoop.util.ReflectionUtils;
 import org.apache.hadoop.util.ServicePlugin;
 import org.apache.hadoop.util.StringUtils;
 import org.apache.hadoop.util.VersionInfo;
+import org.apache.hadoop.util.xIndexUtils;
 import org.mortbay.util.ajax.JSON;
 
 /**********************************************************
@@ -173,6 +174,11 @@ public class DataNode extends Configured
     Configuration.addDefaultResource("hdfs-default.xml");
     Configuration.addDefaultResource("hdfs-site.xml");
   }
+  
+  /*mgferreira*/
+  public int columnsPerRowGroup;
+  public int currentColumn = -1;
+  public ArrayList<Integer> columnsToIndex = new ArrayList<Integer>();
 
   public static final String DN_CLIENTTRACE_FORMAT =
         "src: %s" +      // src IP
@@ -315,6 +321,17 @@ public class DataNode extends Configured
 
     datanodeObject = this;
     durableSync = conf.getBoolean("dfs.durable.sync", true);
+	columnsPerRowGroup = conf.getInt("columns", 1);
+	String columnsToIndexStr = conf.get("columns.to.index");
+	if (columnsToIndexStr != null) {
+		for (String columnToIndex : columnsToIndexStr.split(";")) {
+			columnsToIndex.add(Integer.parseInt(columnToIndex));
+		}
+	}
+	xIndexUtils.initializeIndexBuilderThread();
+	int rowGroupsperNode = conf.getInt("number.of.row.groups", 1)/conf.getInt("number.of.nodes", 1);
+	xIndexUtils.rowGroupsPerNode = rowGroupsperNode;
+	
     this.userWithLocalPathAccess = conf
         .get(DFSConfigKeys.DFS_BLOCK_LOCAL_PATH_ACCESS_USER_KEY);
     try {
@@ -1472,7 +1489,6 @@ public class DataNode extends Configured
                                       8 + /* offset in block */
                                       8 + /* seqno */
                                       1   /* isLastPacketInBlock */);
-  
 
 
   /**
@@ -1633,6 +1649,7 @@ public class DataNode extends Configured
   public static DataNode instantiateDataNode(String args[],
                                       Configuration conf, 
                                       SecureResources resources) throws IOException {
+	  
     if (conf == null)
       conf = new Configuration();
     if (!parseArguments(args, conf)) {
@@ -1664,6 +1681,15 @@ public class DataNode extends Configured
    *  If this thread is specifically interrupted, it will stop waiting.
    *  LimitedPrivate for creating secure datanodes
    */
+  
+  
+  /*mgferreira*/
+  public static DataNode createDataNode(String args[],
+          Configuration conf, SecureResources resources, DataNode dn) throws IOException {
+  runDatanodeDaemon(dn);
+  return dn;
+}
+  
   public static DataNode createDataNode(String args[],
             Configuration conf, SecureResources resources) throws IOException {
     DataNode dn = instantiateDataNode(args, conf, resources);
@@ -1671,7 +1697,7 @@ public class DataNode extends Configured
     return dn;
   }
 
-  void join() {
+  public void join() {
     if (dataNodeThread != null) {
       try {
         dataNodeThread.join();
@@ -1809,6 +1835,7 @@ public class DataNode extends Configured
   }
   
   public static void main(String args[]) {
+      System.out.println("DATANODE BEGINS");
     secureMain(args, null);
   }
 

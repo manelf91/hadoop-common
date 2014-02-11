@@ -49,7 +49,6 @@ import org.apache.hadoop.security.token.Token;
 import org.apache.hadoop.security.token.SecretManager.InvalidToken;
 import org.apache.hadoop.security.token.TokenRenewer;
 import org.apache.hadoop.util.*;
-
 import org.apache.commons.logging.*;
 
 import java.io.*;
@@ -100,6 +99,10 @@ public class DFSClient implements FSConstants, java.io.Closeable {
   private boolean connectToDnViaHostname;
   private SocketAddress[] localInterfaceAddrs;
 
+  /*mgferreira*/
+  public static String filters;
+  public static String firstColumnId;
+  
   /**
    * We assume we're talking to another CDH server, which supports
    * HDFS-630's addBlock method. If we get a RemoteException indicating
@@ -252,6 +255,7 @@ public class DFSClient implements FSConstants, java.io.Closeable {
   DFSClient(InetSocketAddress nameNodeAddr, ClientProtocol rpcNamenode,
       Configuration conf, FileSystem.Statistics stats)
     throws IOException {
+	this.firstColumnId = conf.get("first.column.identifier");
     this.conf = conf;
     this.stats = stats;
     this.nnAddress = nameNodeAddr;
@@ -1544,7 +1548,7 @@ public class DFSClient implements FSConstants, java.io.Closeable {
    */
   public static class RemoteBlockReader extends FSInputChecker implements BlockReader {
 
-    private Socket dnSock; //for now just sending checksumOk.
+	private Socket dnSock; //for now just sending checksumOk.
     private DataInputStream in;
     private DataChecksum checksum;
     private long lastChunkOffset = -1;
@@ -1676,7 +1680,7 @@ public class DFSClient implements FSConstants, java.io.Closeable {
         startOffset = -1;
         return -1;
       }
-      
+
       // Read one DATA_CHUNK.
       long chunkOffset = lastChunkOffset;
       if ( lastChunkLen > 0 ) {
@@ -1807,6 +1811,7 @@ public class DFSClient implements FSConstants, java.io.Closeable {
      * @param verifyChecksum Checksum verification is required or not.
      * @return BlockReader object.
      * @throws IOException
+     * @throws IrrelevantRemoteBlockException 
      */
     public static BlockReader newBlockReader(Socket sock, String file, long blockId, 
                                        Token<BlockTokenIdentifier> accessToken,
@@ -1829,10 +1834,22 @@ public class DFSClient implements FSConstants, java.io.Closeable {
       // in and out will be closed when sock is closed (by the caller)
       DataOutputStream out = new DataOutputStream(
         new BufferedOutputStream(NetUtils.getOutputStream(sock,HdfsConstants.WRITE_TIMEOUT)));
-
+     
+      /*mgferreira*/
+      byte protocol = DataTransferProtocol.OP_READ_BLOCK;
+      if (LineReader.remoteReadAppBlock) {
+    	  protocol = DataTransferProtocol.OP_READ_APPBLOCK;
+    	  //xLog.print("DFSClient: Going to read the row group " + blockId + " from another datanode");
+      }
       //write the header.
       out.writeShort( DataTransferProtocol.DATA_TRANSFER_VERSION );
-      out.write( DataTransferProtocol.OP_READ_BLOCK );
+      out.write(protocol);
+      if (protocol == DataTransferProtocol.OP_READ_APPBLOCK) {
+          out.writeLong( LineReader.firstBlock );
+    	  HashMap<Integer, String> map = xIndexUtils.buildFiltersMap(LineReader.conf);
+    	  ObjectOutputStream objOut = new ObjectOutputStream(out);
+          objOut.writeObject(map);
+      }
       out.writeLong( blockId );
       out.writeLong( genStamp );
       out.writeLong( startOffset );
@@ -1850,6 +1867,16 @@ public class DFSClient implements FSConstants, java.io.Closeable {
                                   bufferSize));
       
       short status = in.readShort();
+      
+      /*mgferreira*/
+      
+      if (status == DataTransferProtocol.OP_READ_IRRELEVANT_APPBLOCK) {
+    	  //xLog.print("DFSClient: remote row group " + blockId + " is irrelevant");
+    	  throw new IrrelevantRemoteBlockException();
+      }
+      if (LineReader.remoteReadAppBlock && file.contains(firstColumnId)) {
+    	  //xLog.print("DFSClient: remote row group " + blockId + " is relevant");
+      }
       if (status != DataTransferProtocol.OP_STATUS_SUCCESS) {
         if (status == DataTransferProtocol.OP_STATUS_ERROR_ACCESS_TOKEN) {
           throw new InvalidBlockTokenException(
@@ -2290,7 +2317,7 @@ public class DFSClient implements FSConstants, java.io.Closeable {
               accessToken, 
               blk.getGenerationStamp(),
               offsetIntoBlock, blk.getNumBytes() - offsetIntoBlock,
-              buffersize, verifyChecksum, clientName);
+              buffersize, verifyChecksum, clientName);          
           return chosenNode;
         } catch (IOException ex) {
           if (refetchToken > 0 && tokenRefetchNeeded(ex, targetAddr)) {
@@ -2414,6 +2441,7 @@ public class DFSClient implements FSConstants, java.io.Closeable {
             if (pos > blockEnd) {
               currentNode = blockSeekTo(pos);
             }
+
             int realLen = (int) Math.min((long) len, (blockEnd - pos + 1L));
             int result = readBuffer(buf, off, realLen);
             
@@ -2565,6 +2593,7 @@ public class DFSClient implements FSConstants, java.io.Closeable {
      * @param length number of bytes to read
      * 
      * @return actual number of bytes read
+     * @throws IrrelevantRemoteBlockException 
      */
     @Override
     public int read(long position, byte[] buffer, int offset, int length)
@@ -2640,7 +2669,7 @@ public class DFSClient implements FSConstants, java.io.Closeable {
             if (pos == targetPos) {
               done = true;
             }
-          } catch (IOException e) {//make following read to retry
+          } catch (IOException e) {//make following read to retry 
             LOG.debug("Exception while seek to " + targetPos + " from "
                       + currentBlock +" of " + src + " from " + currentNode + 
                       ": " + StringUtils.stringifyException(e));
@@ -3647,8 +3676,12 @@ public class DFSClient implements FSConstants, java.io.Closeable {
                                      DataNode.SMALL_BUFFER_SIZE));
         blockReplyStream = new DataInputStream(NetUtils.getInputStream(s));
 
+        /*mgferreira*/
+        byte protocol = (src.contains(".txt") || (src.contains(".gz")))?
+        		DataTransferProtocol.OP_WRITE_APPBLOCK: DataTransferProtocol.OP_WRITE_BLOCK;
+
         out.writeShort( DataTransferProtocol.DATA_TRANSFER_VERSION );
-        out.write( DataTransferProtocol.OP_WRITE_BLOCK );
+    	out.write(protocol);
         out.writeLong( block.getBlockId() );
         out.writeLong( block.getGenerationStamp() );
         out.writeInt( nodes.length );
@@ -3717,7 +3750,7 @@ public class DFSClient implements FSConstants, java.io.Closeable {
         while (true) {
           try {
             if (serverSupportsHdfs630) {
-              return namenode.addBlock(src, clientName, excludedNodes);
+            	return namenode.addBlock(src, clientName, excludedNodes);
             } else {
               return namenode.addBlock(src, clientName);
             }
