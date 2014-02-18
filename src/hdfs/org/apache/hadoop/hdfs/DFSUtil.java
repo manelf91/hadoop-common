@@ -108,7 +108,8 @@ public class DFSUtil {
                                      locations[hCnt].getNetworkLocation());
         racks[hCnt] = node.toString();
       }
-      blkLocations[idx] = new BlockLocation(names, hosts, racks,
+      /*mgferreira*/
+      blkLocations[idx] = new BlockLocation(blk.getBlock().getBlockId(), names, hosts, racks,
                                             blk.getStartOffset(),
                                             blk.getBlockSize());
       idx++;

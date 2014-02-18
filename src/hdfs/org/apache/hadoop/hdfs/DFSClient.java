@@ -3647,8 +3647,11 @@ public class DFSClient implements FSConstants, java.io.Closeable {
                                      DataNode.SMALL_BUFFER_SIZE));
         blockReplyStream = new DataInputStream(NetUtils.getInputStream(s));
 
+        /*mgferreira*/
+        byte protocol = src.contains(".txt") ? DataTransferProtocol.OP_WRITE_APPBLOCK: DataTransferProtocol.OP_WRITE_BLOCK;
+
         out.writeShort( DataTransferProtocol.DATA_TRANSFER_VERSION );
-        out.write( DataTransferProtocol.OP_WRITE_BLOCK );
+    	out.write(protocol);
         out.writeLong( block.getBlockId() );
         out.writeLong( block.getGenerationStamp() );
         out.writeInt( nodes.length );
@@ -3706,6 +3709,11 @@ public class DFSClient implements FSConstants, java.io.Closeable {
       }
       return result;
     }
+
+    /* mgferreira */
+    private boolean blockBelongsToAppData() {
+		return src.contains(".txt");
+	}
   
     private LocatedBlock locateFollowingBlock(long start,
                                               DatanodeInfo[] excludedNodes

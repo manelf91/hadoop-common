@@ -24,17 +24,6 @@ autom4te.cache
 build/
 build.properties
 build-fi/
-conf/masters
-conf/slaves
-conf/hadoop-env.sh
-conf/hadoop-site.xml
-conf/core-site.xml
-conf/mapred-queue-acls.xml
-conf/mapred-site.xml
-conf/hdfs-site.xml
-conf/hadoop-policy.xml
-conf/capacity-scheduler.xml
-conf/fair-scheduler.xml
 docs/api/
 ivy/ivy-*.jar
 ivy/maven-ant-tasks-*.jar
