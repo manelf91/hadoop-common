@@ -131,6 +131,12 @@ public class IsolationRunner {
                                        long[] sizes){
       // NOTHING
     }
+
+	@Override
+	public boolean checkIfRelevantBlock(long blockId) {
+		// TODO Auto-generated method stub
+		return false;
+	}
   }
   
   private ClassLoader makeClassLoader(JobConf conf, 

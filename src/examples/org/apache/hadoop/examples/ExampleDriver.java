@@ -24,6 +24,7 @@ import org.apache.hadoop.examples.terasort.TeraGen;
 import org.apache.hadoop.examples.terasort.TeraSort;
 import org.apache.hadoop.examples.terasort.TeraValidate;
 import org.apache.hadoop.util.ProgramDriver;
+import org.apache.hadoop.mapred.WordCountMy;
 
 /**
  * A description of an example program based on its class and a 
@@ -36,6 +37,8 @@ public class ExampleDriver {
     ProgramDriver pgd = new ProgramDriver();
     try {
       pgd.addClass("wordcount", WordCount.class, 
+                   "A map/reduce program that counts the words in the input files.");
+      pgd.addClass("wordcountmy", WordCountMy.class, 
                    "A map/reduce program that counts the words in the input files.");
       pgd.addClass("aggregatewordcount", AggregateWordCount.class, 
                    "An Aggregate based map/reduce program that counts the words in the input files.");

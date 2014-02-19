@@ -199,6 +199,7 @@ public class LocalJobRunner implements JobSubmissionProtocol {
 
       public void run() {
         try {
+
           TaskAttemptID mapId = new TaskAttemptID(new TaskID(
               jobId, true, taskId), 0);
           LOG.info("Starting task: " + mapId);
@@ -564,6 +565,12 @@ public class LocalJobRunner implements JobSubmissionProtocol {
                                                                 throws IOException {
       trackerDistributedCacheManager.setArchiveSizes(jobId, sizes);
     }
+
+	@Override
+	public boolean checkIfRelevantBlock(long blockId) {
+		// TODO Auto-generated method stub
+		return false;
+	}
     
   }
 
