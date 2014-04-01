@@ -115,15 +115,14 @@ public class xIndexUtils {
 
 	//-1=irrelevant, 1=relevant, 0=non_local_block
 	public static int checkIfRelevantRowGroup(TreeMap<Integer, String> filters, long blockId) {
-		System.out.println(index);
-		System.out.println("xIndexUtils: ver se o bloco " + blockId + " e' relevante...");
+		xLog.print("xIndexUtils: Going to check if row group " + blockId + " is relevant");
 		if(filters.size() == 0)
 			return 1;
 
 		HashMap<Integer, Long> split = (HashMap<Integer, Long>) block2split.get(new Long(blockId));
 
 		if(split == null) {
-			System.out.println("xIndexUtils: I'm reading a non-local block: " + blockId);
+			xLog.print("xIndexUtils: Reading a non-local row group: " + blockId);
 			return 0;
 		}
 
@@ -132,17 +131,13 @@ public class xIndexUtils {
 			long blockIdOfAttrNr = split.get(attrNr).longValue();
 
 			TreeSet<Long> relevantBlocks = index.get(attrNr).get(predicate);
-	
-			System.out.println("block2split: " + block2split.toString());
-			System.out.println("relevantBlocks: " + relevantBlocks);
-			System.out.println("blockIdOfAttrNr: " + blockIdOfAttrNr);
 
 			if((relevantBlocks == null) || (!relevantBlocks.contains(new Long(blockIdOfAttrNr)))) {
-				System.out.println("xIndexUtils: o bloco " + blockId + " e' irrelevante");
+				xLog.print("xIndexUtils: The row group " + blockId + " is irrelevant");
 				return -1;
 			}
 		}
-		System.out.println("xIndexUtils: o bloco " + blockId + " e' relevante");
+		xLog.print("xIndexUtils: The row group " + blockId + " is relevant");
 		return 1;
 	}
 }

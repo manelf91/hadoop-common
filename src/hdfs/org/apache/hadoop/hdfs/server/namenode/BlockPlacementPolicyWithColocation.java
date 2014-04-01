@@ -111,20 +111,15 @@ public class BlockPlacementPolicyWithColocation extends BlockPlacementPolicy {
 	    /* mgferreira */
 		if ((src.contains(".txt") || (src.contains(".gz")))) { /* we're allocating a new block for the input. not for the output*/
 			NetworkTopology.appData = true;
-			System.out.println("source file: " + src);
 			currentColumn = (currentColumn + 1) % columnsPerRowGroup;
 			if (currentColumn != 0) {
-				System.out.println("Same row group!");
 				return datanodesForCurrentRowGroup;
 			}
-			System.out.println("New row group!");
 
 			currentRowGroup = (currentRowGroup + 1) % rowGroupsPerNode;
 			if (currentRowGroup != 0) {
-				System.out.println("Same node!");
 				return datanodesForCurrentRowGroup;
 			}
-			System.out.println("New node!");
 		}
 		else {
 			NetworkTopology.appData = false;

@@ -21,6 +21,7 @@ package org.apache.hadoop.mapred;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -36,6 +37,7 @@ import org.apache.hadoop.io.compress.CompressionCodecFactory;
 import org.apache.hadoop.io.compress.Decompressor;
 import org.apache.hadoop.io.compress.SplitCompressionInputStream;
 import org.apache.hadoop.io.compress.SplittableCompressionCodec;
+import org.apache.hadoop.util.xLog;
 
 /* mgferreira*/
 
@@ -97,7 +99,7 @@ public class xRecordReader implements RecordReader<LongWritable, Text> {
 		inN.clear();
 		posN.clear();
 
-		System.out.println("Xrecord reader: block " + currentBlockId + " relevancia: " + relevantBlock);
+		xLog.print("xRecordReader: block " + currentBlockId + " relevance: " + relevantBlock);
 		if(relevantBlock == 0){
 			org.apache.hadoop.util.LineReader.remoteReadAppBlock = true;
 		}
@@ -140,8 +142,8 @@ public class xRecordReader implements RecordReader<LongWritable, Text> {
 						final SplitCompressionInputStream cInN = ((SplittableCompressionCodec)codec).createInputStream(
 								fileInN, decompressor, start, end, SplittableCompressionCodec.READ_MODE.BYBLOCK);
 						inN.add(new LineReader(cInN, job));
-						long startN = cInN.getAdjustedStart();
-						long endN = cInN.getAdjustedEnd();
+						cInN.getAdjustedStart();
+						cInN.getAdjustedEnd();
 						filePositionN.add(cInN); // take pos from compressed stream
 					}
 				} else {

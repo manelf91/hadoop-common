@@ -34,6 +34,7 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.util.xIndexUtils;
+import org.apache.hadoop.util.xLog;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.FileInputFormat;
@@ -92,6 +93,7 @@ implements JobConfigurable {
 		else {
 			String sizeOfSplits = job.get("blocks.per.split");
 			List<Integer> splitList = buildSplitList(sizeOfSplits);
+			xLog.print("xInputFormat: Different splits: " + splitList.toString());
 			return buildDifferentSplits(job, files, numSplits, splitList);
 		}
 	}
@@ -197,7 +199,6 @@ implements JobConfigurable {
 				}
 			}
 		}
-		System.out.println(splitList);
 		return splitList;
 	} 
 }

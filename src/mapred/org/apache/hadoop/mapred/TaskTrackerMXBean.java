@@ -62,5 +62,8 @@ public interface TaskTrackerMXBean {
    * @return a json formatted info about tasks of the tasktracker
    */
   String getTasksInfoJson();
-
+  
+  String getIndexSize();
+  
+  String getxLog();
 }

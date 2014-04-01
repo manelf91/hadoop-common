@@ -17,10 +17,12 @@
  */
 package org.apache.hadoop.mapred;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
 import java.lang.management.ManagementFactory;
@@ -42,6 +44,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.Vector;
 import java.util.Map.Entry;
 import java.util.concurrent.BlockingQueue;
@@ -104,6 +107,7 @@ import org.apache.hadoop.util.MemoryCalculatorPlugin;
 import org.apache.hadoop.util.ResourceCalculatorPlugin;
 import org.apache.hadoop.util.ProcfsBasedProcessTree;
 import org.apache.hadoop.util.xIndexUtils;
+import org.apache.hadoop.util.xLog;
 import org.apache.hadoop.security.token.Token;
 import org.apache.hadoop.security.token.TokenIdentifier;
 import org.apache.hadoop.util.ReflectionUtils;
@@ -289,7 +293,7 @@ Runnable, TaskTrackerMXBean {
 	/* mgferreira */
 	// attrNr -> filter
 	TreeMap<Integer, String> filters = new TreeMap<Integer, String>();
-	
+
 	JobTokenSecretManager getJobTokenSecretManager() {
 		return jobTokenSecretManager;
 	}
@@ -1530,8 +1534,8 @@ Runnable, TaskTrackerMXBean {
 	public TaskTracker(JobConf conf, DataNode datanode) throws IOException, InterruptedException {
 		/*mgferreira*/
 		this.datanode = datanode;
-		
-		
+
+
 		originalConf = conf;
 		relaxedVersionCheck = conf.getBoolean(
 				CommonConfigurationKeys.HADOOP_RELAXED_VERSION_CHECK_KEY,
@@ -3938,7 +3942,7 @@ Runnable, TaskTrackerMXBean {
 	public static void main(final String argv[]) throws Exception {
 
 		final DataNode datanode = DataNode.instantiateDataNode(argv, null, null);
-		
+
 		new Thread(new Runnable() {
 			@Override
 			public void run() {
@@ -4624,7 +4628,7 @@ Runnable, TaskTrackerMXBean {
 		distributedCacheManager.setArchiveSizes(jobId, sizes);
 	}
 
-	
+
 	/*mgferreira*/
 	@Override
 	public int checkIfRelevantRowGroup(long blockId, String filters) {
@@ -4639,7 +4643,32 @@ Runnable, TaskTrackerMXBean {
 				filtersMap.put(attrNr, attrValue);
 			}
 		}
-		System.out.println("Task tracker.ver se o bloco " + blockId + " e' relevante...");
 		return xIndexUtils.checkIfRelevantRowGroup(filtersMap, blockId);
+	}
+
+	@Override
+	public String getIndexSize() {
+		String indexSize = "";
+		synchronized(xIndexUtils.index) {
+			for (Integer attr : xIndexUtils.index.keySet()){
+				TreeMap<String, TreeSet<Long>> attrIndex = xIndexUtils.index.get(attr);
+				ByteArrayOutputStream baos = new ByteArrayOutputStream();
+				ObjectOutputStream oos;
+				try {
+					oos = new ObjectOutputStream(baos);
+					oos.writeObject(attrIndex);
+					oos.flush();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+				indexSize += "attribute " + attr.intValue() + " = " + baos.toByteArray().length + " bytes\n";
+			}
+		}
+		return indexSize;
+	}
+
+	@Override
+	public String getxLog() {
+		return xLog.getLog();
 	}
 }

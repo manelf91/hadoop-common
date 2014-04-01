@@ -241,7 +241,7 @@ public class LineReader {
 			return (int)bytesConsumed;
 		}
 		catch (IrrelevantRemoteBlockException e) {
-			System.out.println("Irrelevant Remote Block");
+			xLog.print("LineReader: Irrelevant remote block");
 			return 0;
 		}
 	}

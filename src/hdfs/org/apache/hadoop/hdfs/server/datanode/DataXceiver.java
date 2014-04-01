@@ -50,6 +50,7 @@ import org.apache.hadoop.security.token.Token;
 import org.apache.hadoop.util.DataChecksum;
 import org.apache.hadoop.util.StringUtils;
 import org.apache.hadoop.util.xIndexUtils;
+import org.apache.hadoop.util.xLog;
 
 /**
  * Thread for processing incoming/outgoing data stream.
@@ -322,7 +323,7 @@ class DataXceiver implements Runnable, FSConstants {
 					byte protocol = 0;
 					TreeMap<Integer, String> filtersMap = new TreeMap<Integer, String>();
 
-					System.out.println("read block " + blockId + " for another datanode");
+					xLog.print("DataXceiver: A datanode has requested the row group " + blockId);
 					// <attribute number #>-<predicate>;<attribute number #>-<predicate>...
 					if(filters != null) {
 						String[] filtersArr = filters.split(":");
@@ -330,11 +331,10 @@ class DataXceiver implements Runnable, FSConstants {
 							Integer attrNr = Integer.parseInt(filter.split("-")[0]);
 							String attrValue = filter.split("-")[1];
 							filtersMap.put(attrNr, attrValue);
-							System.out.println("there are filters!: " + attrNr + " - " + attrValue);
 						}
 					}
 					if (xIndexUtils.checkIfRelevantRowGroup(filtersMap, blockId) == -1) {
-						System.out.println("irrelevant block " + blockId + " for another datanode");
+						xLog.print("DataXceiver: The requested the row group " + blockId + " is irrelevant");
 						protocol = DataTransferProtocol.OP_READ_IRRELEVANT_APPBLOCK;
 						out.writeShort(protocol); // send op status
 						out.flush();
@@ -342,6 +342,7 @@ class DataXceiver implements Runnable, FSConstants {
 						IOUtils.closeStream(blockSender);
 						return;
 					}
+					xLog.print("DataXceiver: The requested row group " + blockId + " is relevant");
 					protocol = DataTransferProtocol.OP_STATUS_SUCCESS;
 					out.writeShort(protocol); // send op status
 
@@ -651,47 +652,19 @@ class DataXceiver implements Runnable, FSConstants {
 				DataNode.currentColumn = (DataNode.currentColumn + 1) % DataNode.columnsPerRowGroup;
 			}
 			xIndexUtils.currentColumnNr = DataNode.currentColumn;
+			xIndexUtils.first = false;
 
 			if(columnsToIndex.contains(new Integer(DataNode.currentColumn))) {
-				blockReceiver.createIndex = true;
+				blockReceiver.createIndex = true;				
+				if(columnsToIndex.get(0).equals(new Integer(DataNode.currentColumn))) {
+					xIndexUtils.first = true;
+				}
 			} else {
 				blockReceiver.createIndex = false;
 			}
 
-			if(columnsToIndex.size() > 0) {
-				if(columnsToIndex.get(0).equals(new Integer(DataNode.currentColumn))) {
-					xIndexUtils.first = true;
-				}
-				else {
-					xIndexUtils.first = false;
-				}
-			}
-
-			System.out.println("column: " + DataNode.currentColumn);
-			System.out.println("going to indexing? " + blockReceiver.createIndex);
-
-			int mb = 1024*1024;
-
-			//Getting the runtime reference from system
-			Runtime runtime = Runtime.getRuntime();
-
-			System.out.println("##### Heap utilization statistics [MB] #####");
-
-			//Print used memory
-			System.out.println("Used Memory:"
-					+ (runtime.totalMemory() - runtime.freeMemory()) / mb);
-
-			//Print free memory
-			System.out.println("Free Memory:"
-					+ runtime.freeMemory() / mb);
-
-			//Print total available memory
-			System.out.println("Total Memory:" + runtime.totalMemory() / mb);
-
-			//Print Maximum available memory
-			System.out.println("Max Memory:" + runtime.maxMemory() / mb);
-			System.out.println("#########################");		
-
+			xLog.print("DataXceiver: Column " + DataNode.currentColumn + ". Going to index it? " + blockReceiver.createIndex);
+			xLog.print("DataXceiver: Column " + DataNode.currentColumn + ". Is it the first of a row group? " + xIndexUtils.first);
 
 			//
 			// Open network conn to backup machine, if 

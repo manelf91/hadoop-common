@@ -674,7 +674,6 @@ public class NetworkTopology {
 		}
 		if(appData) {
 			appData = false;
-			System.out.println("choosing node with index: " + nextNode);
 			Node n = innerNode.getLeaf(nextNode, node);
 			nextNode = (nextNode + 1) % numOfDatanodes;
 			return n;
