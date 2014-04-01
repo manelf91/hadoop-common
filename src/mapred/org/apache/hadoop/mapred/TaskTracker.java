@@ -4648,23 +4648,8 @@ Runnable, TaskTrackerMXBean {
 
 	@Override
 	public String getIndexSize() {
-		String indexSize = "";
-		synchronized(xIndexUtils.index) {
-			for (Integer attr : xIndexUtils.index.keySet()){
-				TreeMap<String, TreeSet<Long>> attrIndex = xIndexUtils.index.get(attr);
-				ByteArrayOutputStream baos = new ByteArrayOutputStream();
-				ObjectOutputStream oos;
-				try {
-					oos = new ObjectOutputStream(baos);
-					oos.writeObject(attrIndex);
-					oos.flush();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-				indexSize += "attribute " + attr.intValue() + " = " + baos.toByteArray().length + " bytes\n";
-			}
-		}
-		return indexSize;
+		String indexSize = xIndexUtils.getIndexSizeStr();
+		return indexSize;		
 	}
 
 	@Override

@@ -6,6 +6,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -69,6 +70,7 @@ public class xIndexUtils {
 				catch (IOException e) {
 					e.printStackTrace();
 				}
+				xLog.print("xIndexUtils: index size:\n" + getIndexSizeStr());
 			}
 		}
 	}
@@ -139,5 +141,23 @@ public class xIndexUtils {
 		}
 		xLog.print("xIndexUtils: The row group " + blockId + " is relevant");
 		return 1;
+	}
+
+	public static String getIndexSizeStr() {
+		String indexSize = "";
+		for (Integer attr : xIndexUtils.index.keySet()){
+			TreeMap<String, TreeSet<Long>> attrIndex = xIndexUtils.index.get(attr);
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			ObjectOutputStream oos;
+			try {
+				oos = new ObjectOutputStream(baos);
+				oos.writeObject(attrIndex);
+				oos.flush();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			indexSize += "attribute " + attr.intValue() + " = " + baos.toByteArray().length + " bytes\n";
+		}
+		return indexSize;
 	}
 }
