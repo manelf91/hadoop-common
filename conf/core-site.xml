@@ -1,13 +1,13 @@
 <configuration>
 <property> 
 <name>hadoop.tmp.dir</name> 
-<value>/home/mgferreira/tmp</value>
+<value>/home/manuelgf/Downloads/hadoop-1.2.1/tmp</value>
 <description>A base for other temporary directories.</description> 
 </property>
 
 <property> 
 <name>fs.default.name</name> 
-<value>hdfs://master:54310</value> 
+<value>hdfs://localhost:54310</value> 
 <description>The name of the default file system. A URI whose 
 scheme and authority determine the FileSystem implementation. The 
 uri’s scheme determines the config property (fs.SCHEME.impl) naming 
@@ -24,25 +24,30 @@ determine the host, port, etc. for a filesystem.</description>
 
 <property>
 <name>columns</name>
-<value>1</value>
+<value>4</value>
 <description> The number of attributes containing in the dataset  </description>
 </property>
 
 <property>
 <name>number.of.row.groups</name>
-<value>300</value>
+<value>1</value>
 </property>
 
 <property>
 <name>number.of.nodes</name>
-<value>3</value>
+<value>1</value>
 </property>
 
 
 <property>
 <name>first.column.identifier</name>
-<value>_0_</value>
+<value>_1_</value>
 <description> Sequence of characters that identifies the first columns of row groups </description>
+</property>
+
+<property>
+<name> columns.to.index</name>
+<value>1;2;3</value>
 </property>
 
 </configuration>
