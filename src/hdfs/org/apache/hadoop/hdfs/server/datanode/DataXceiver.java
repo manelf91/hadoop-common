@@ -89,6 +89,7 @@ class DataXceiver implements Runnable, FSConstants {
 				columnsToIndex.add(Integer.parseInt(columnToIndex));
 			}
 		}
+		xIndexUtils.initializeIndexBuilderThread();
 	}
 
 	/**
@@ -644,27 +645,14 @@ class DataXceiver implements Runnable, FSConstants {
 					s.getLocalSocketAddress().toString(),
 					isRecovery, client, srcDataNode, datanode);
 
+			
 			/*mgferreira*/ 
-			if(DataNode.columnsPerRowGroup == 1) {
-				DataNode.currentColumn = 0;
-			}
-			else {
-				DataNode.currentColumn = (DataNode.currentColumn + 1) % DataNode.columnsPerRowGroup;
-			}
-			xIndexUtils.currentColumnNr = DataNode.currentColumn;
-			xIndexUtils.first = false;
-
-			if(columnsToIndex.contains(new Integer(DataNode.currentColumn))) {
-				blockReceiver.createIndex = true;				
-				if(columnsToIndex.get(0).equals(new Integer(DataNode.currentColumn))) {
-					xIndexUtils.first = true;
-				}
-			} else {
-				blockReceiver.createIndex = false;
-			}
+			blockReceiver.currentColumn =  getCurrentColumnNr();	
+			blockReceiver.createIndex = checkIfGoingToIndex();
+			blockReceiver.first = checkIfFirstBlock();
 
 			xLog.print("DataXceiver: Column " + DataNode.currentColumn + ". Going to index it? " + blockReceiver.createIndex);
-			xLog.print("DataXceiver: Column " + DataNode.currentColumn + ". Is it the first of a row group? " + xIndexUtils.first);
+			xLog.print("DataXceiver: Column " + DataNode.currentColumn + ". Is it the first of a row group? " + blockReceiver.first);
 
 			//
 			// Open network conn to backup machine, if 
@@ -790,6 +778,34 @@ class DataXceiver implements Runnable, FSConstants {
 			IOUtils.closeSocket(mirrorSock);
 			IOUtils.closeStream(blockReceiver);
 		}
+	}
+
+	private boolean checkIfFirstBlock() {
+		if (columnsToIndex.size() > 0) {
+			if(columnsToIndex.get(0).equals(new Integer(DataNode.currentColumn))) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private boolean checkIfGoingToIndex() {		
+		if(columnsToIndex.contains(new Integer(DataNode.currentColumn))) {
+			return true;
+		}
+		else {
+			return false;
+		}
+	}
+
+	private int getCurrentColumnNr() {
+		if(DataNode.columnsPerRowGroup == 1) {
+			DataNode.currentColumn = 0;
+		}
+		else {
+			DataNode.currentColumn = (DataNode.currentColumn + 1) % DataNode.columnsPerRowGroup;
+		}
+		return DataNode.currentColumn;
 	}
 
 

@@ -20,6 +20,7 @@ package org.apache.hadoop.hdfs.server.datanode;
 import static org.apache.hadoop.hdfs.server.datanode.DataNode.DN_CLIENTTRACE_FORMAT;
 
 import java.io.BufferedOutputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.EOFException;
@@ -48,6 +49,7 @@ import org.apache.hadoop.util.Daemon;
 import org.apache.hadoop.util.DataChecksum;
 import org.apache.hadoop.util.PureJavaCrc32;
 import org.apache.hadoop.util.StringUtils;
+import org.apache.hadoop.util.xBlockQueueItem;
 import org.apache.hadoop.util.xIndexUtils;
 
 /** A class that receives a block and writes to its own disk, meanwhile
@@ -95,6 +97,9 @@ class BlockReceiver implements java.io.Closeable, FSConstants {
 
 	/*mgferreira*/
 	public boolean createIndex = false;
+	public int currentColumn;
+	public boolean first;
+	public ByteArrayOutputStream currentCompressedData = new ByteArrayOutputStream();
 
 	BlockReceiver(Block block, DataInputStream in, String inAddr,
 			String myAddr, boolean isRecovery, String clientName, 
@@ -489,10 +494,13 @@ class BlockReceiver implements java.io.Closeable, FSConstants {
 					/* mgferreira */
 					if(createIndex) {
 						byte[] copy = Arrays.copyOf(pktBuf, pktBuf.length);
-						xIndexUtils.addPacket(copy, dataOff, len);
+						currentCompressedData.write(copy, dataOff, len);
+						currentCompressedData.flush();
 						if(lastPacketInBlock) {
-							Thread indexBuilder = new Thread(new xIndexUtils.IndexBuilder(block.getBlockId()));
-							indexBuilder.start();
+							currentCompressedData.close();
+							xBlockQueueItem item = new xBlockQueueItem(block.getBlockId(), currentCompressedData, currentColumn, first);
+							xIndexUtils.queue.add(item);
+							currentCompressedData = new ByteArrayOutputStream();
 						}
 					}
 
