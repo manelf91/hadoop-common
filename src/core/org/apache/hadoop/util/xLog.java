@@ -6,7 +6,7 @@ public class xLog {
 
 	public static void print(String s) {
 		synchronized (log) {
-			log += s + '\n';
+			//log += s + '\n';
 			System.out.println(s);
 		}
 	}
