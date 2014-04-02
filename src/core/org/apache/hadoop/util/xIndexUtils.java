@@ -3,6 +3,8 @@ package org.apache.hadoop.util;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.ObjectOutputStream;
@@ -78,7 +80,7 @@ public class xIndexUtils {
 		indexBuilder = new Thread(new xIndexUtils.IndexBuilder());
 		indexBuilder.start();
 	}
-	
+
 	private static void initializeIndexForCurrentColumn(int columnNr) {
 		TreeMap<String, TreeSet<Long>> currentColumnIndex = index.get(new Integer(columnNr));
 		if(currentColumnIndex == null) {
@@ -149,16 +151,17 @@ public class xIndexUtils {
 
 			indexSize += "attribute " + attr.intValue() + " has " + attrIndex.size() + " entries \n";
 
-			ByteArrayOutputStream baos = new ByteArrayOutputStream();
-			ObjectOutputStream oos;
 			try {
-				oos = new ObjectOutputStream(baos);
+				FileOutputStream fout = new FileOutputStream("/home/mgferreira/index.obj");
+				DataOutputStream dos = new DataOutputStream(fout);
+				ObjectOutputStream oos = new ObjectOutputStream(dos);
 				oos.writeObject(attrIndex);
 				oos.flush();
+				oos.close();
+				indexSize += "attribute " + attr.intValue() + " = " + dos.size() + " bytes\n";
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
-			indexSize += "attribute " + attr.intValue() + " = " + baos.toByteArray().length + " bytes\n";
 		}
 		return indexSize;
 	}
