@@ -24,7 +24,7 @@ public class xIndexUtils {
 	//first block of split N -> first block of split N, second block of split N, third block of split N... 
 	private static TreeMap<Long, Map<Integer, Long>> block2split = new TreeMap<Long,  Map<Integer, Long>>();
 
-	public static BlockingQueue<xBlockQueueItem> queue = new LinkedBlockingQueue<xBlockQueueItem>(10);
+	public static BlockingQueue<xBlockQueueItem> queue = new LinkedBlockingQueue<xBlockQueueItem>(200);
 	static Thread indexBuilder = null;
 
 	public static class IndexBuilder implements Runnable {
