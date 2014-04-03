@@ -9,7 +9,9 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.ObjectOutputStream;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -21,7 +23,7 @@ public class xIndexUtils {
 
 	private static Long blockIdOfFirstBlock = new Long(0);
 	// <attribute nr, <attribute value, blockId>>
-	public final static TreeMap<Integer, TreeMap<String, TreeSet<Long>>> index = new TreeMap<Integer, TreeMap<String, TreeSet<Long>>> ();
+	public final static LinkedHashMap<Integer, HashMap<String, ArrayList<Long>>> index = new LinkedHashMap<Integer, HashMap<String, ArrayList<Long>>> ();
 
 	//first block of split N -> first block of split N, second block of split N, third block of split N... 
 	private static TreeMap<Long, Map<Integer, Long>> block2split = new TreeMap<Long,  Map<Integer, Long>>();
@@ -82,16 +84,16 @@ public class xIndexUtils {
 
 	private static void initializeIndexForCurrentColumn(Integer columnNr) {
 		if(!index.containsKey(columnNr)) {
-			TreeMap<String, TreeSet<Long>> currentColumnIndex = new TreeMap<String, TreeSet<Long>>();
+			HashMap<String, ArrayList<Long>> currentColumnIndex = new HashMap<String, ArrayList<Long>>();
 			index.put(columnNr, currentColumnIndex);
 		}
 	}
 
 	private static void addEntriesToIndex(String entry, Long blockId, Integer columnNr) {
-		TreeMap<String, TreeSet<Long>> currentColumnIndex = index.get(columnNr);
-		TreeSet<Long> blocksForEntry = currentColumnIndex.get(entry);
+		HashMap<String, ArrayList<Long>> currentColumnIndex = index.get(columnNr);
+		ArrayList<Long> blocksForEntry = currentColumnIndex.get(entry);
 		if(blocksForEntry == null) {
-			blocksForEntry = new TreeSet<Long>();
+			blocksForEntry = new ArrayList<Long>();
 			currentColumnIndex.put(entry, blocksForEntry);
 		}
 		blocksForEntry.add(blockId);
@@ -115,7 +117,7 @@ public class xIndexUtils {
 	}
 
 	//-1=irrelevant, 1=relevant, 0=non_local_block
-	public static int checkIfRelevantRowGroup(TreeMap<Integer, String> filters, long blockId) {
+	public static int checkIfRelevantRowGroup(HashMap<Integer, String> filters, long blockId) {
 		xLog.print("xIndexUtils: Going to check if row group " + blockId + " is relevant");
 		if(filters.size() == 0)
 			return 1;
@@ -131,7 +133,7 @@ public class xIndexUtils {
 			String predicate = filters.get(attrNr);
 			Long blockIdOfAttrNr = split.get(attrNr);
 
-			TreeSet<Long> relevantBlocks = index.get(attrNr).get(predicate);
+			ArrayList<Long> relevantBlocks = index.get(attrNr).get(predicate);
 
 			if((relevantBlocks == null) || (!relevantBlocks.contains(blockIdOfAttrNr))) {
 				xLog.print("xIndexUtils: The row group " + blockId + " is irrelevant");
@@ -145,7 +147,7 @@ public class xIndexUtils {
 	public static String getIndexSizeStr() {
 		String indexSize = "# Attributes: " + index.size() + "\n";
 		for (Integer attr : index.keySet()){
-			TreeMap<String, TreeSet<Long>> attrIndex = index.get(attr);
+			HashMap<String, ArrayList<Long>> attrIndex = index.get(attr);
 
 			indexSize += "attribute " + attr.intValue() + " has " + attrIndex.size() + " entries \n";
 
