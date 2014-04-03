@@ -19,7 +19,7 @@ import java.util.zip.GZIPInputStream;
 
 public class xIndexUtils {
 
-	private static long blockIdOfFirstBlock = 0;
+	private static Long blockIdOfFirstBlock = new Long(0);
 	// <attribute nr, <attribute value, blockId>>
 	public final static TreeMap<Integer, TreeMap<String, TreeSet<Long>>> index = new TreeMap<Integer, TreeMap<String, TreeSet<Long>>> ();
 
@@ -39,17 +39,16 @@ public class xIndexUtils {
 						xBlockQueueItem item = queue.take();
 
 						ByteArrayOutputStream compressedData = item.data;
-						long blockId = item.blockId;
+						Long blockIdL = new Long(item.blockId);
 						boolean first = item.first;
-						int columnNr = item.columnNr;
+						Integer columnNr = new Integer(item.columnNr);
 
 						ByteArrayOutputStream decompressedData = decompressData(compressedData);
 
-						Long blockIdL = new Long(blockId);
 						initializeIndexForCurrentColumn(columnNr);
 						if(first) {
-							blockIdOfFirstBlock = blockId;
 							block2split.put(blockIdL, new HashMap<Integer, Long>());
+							blockIdOfFirstBlock = blockIdL;
 						}
 
 						ByteArrayInputStream bais = new ByteArrayInputStream(decompressedData.toByteArray());
@@ -57,13 +56,13 @@ public class xIndexUtils {
 
 						String entry = "";
 						while((entry = br.readLine()) != null) {
-							addEntriesToIndex(entry, blockIdL, columnNr);
+							addEntriesToIndex(new String(entry), blockIdL, columnNr);
 						}
 
-						HashMap<Integer, Long> split = (HashMap<Integer, Long>) block2split.get(new Long(blockIdOfFirstBlock));
-						split.put(new Integer(columnNr), blockIdL);
+						HashMap<Integer, Long> split = (HashMap<Integer, Long>) block2split.get(blockIdOfFirstBlock);
+						split.put(columnNr, blockIdL);
 
-						xLog.print("xIndexUtils: index size:\n" + getIndexSizeStr());
+						//xLog.print("xIndexUtils: index size:\n" + getIndexSizeStr());
 					}
 					catch (IOException e) {
 						xLog.print(e.toString());
@@ -81,20 +80,20 @@ public class xIndexUtils {
 		indexBuilder.start();
 	}
 
-	private static void initializeIndexForCurrentColumn(int columnNr) {
-		TreeMap<String, TreeSet<Long>> currentColumnIndex = index.get(new Integer(columnNr));
+	private static void initializeIndexForCurrentColumn(Integer columnNr) {
+		TreeMap<String, TreeSet<Long>> currentColumnIndex = index.get(columnNr);
 		if(currentColumnIndex == null) {
 			currentColumnIndex = new TreeMap<String, TreeSet<Long>>();
-			index.put(new Integer(columnNr), currentColumnIndex);
+			index.put(columnNr, currentColumnIndex);
 		}
 	}
 
-	private static void addEntriesToIndex(String entry, Long blockId, int columnNr) {
-		TreeMap<String, TreeSet<Long>> currentColumnIndex = index.get(new Integer(columnNr));
-		TreeSet<Long> blocksForEntry = currentColumnIndex.get(new String(entry));
+	private static void addEntriesToIndex(String entry, Long blockId, Integer columnNr) {
+		TreeMap<String, TreeSet<Long>> currentColumnIndex = index.get(columnNr);
+		TreeSet<Long> blocksForEntry = currentColumnIndex.get(entry);
 		if(blocksForEntry == null) {
 			blocksForEntry = new TreeSet<Long>();
-			currentColumnIndex.put(new String(entry), blocksForEntry);
+			currentColumnIndex.put(entry, blocksForEntry);
 		}
 		blocksForEntry.add(blockId);
 	}
@@ -131,11 +130,11 @@ public class xIndexUtils {
 
 		for(Integer attrNr : filters.keySet()) {
 			String predicate = filters.get(attrNr);
-			long blockIdOfAttrNr = split.get(attrNr).longValue();
+			Long blockIdOfAttrNr = split.get(attrNr);
 
 			TreeSet<Long> relevantBlocks = index.get(attrNr).get(predicate);
 
-			if((relevantBlocks == null) || (!relevantBlocks.contains(new Long(blockIdOfAttrNr)))) {
+			if((relevantBlocks == null) || (!relevantBlocks.contains(blockIdOfAttrNr))) {
 				xLog.print("xIndexUtils: The row group " + blockId + " is irrelevant");
 				return -1;
 			}
