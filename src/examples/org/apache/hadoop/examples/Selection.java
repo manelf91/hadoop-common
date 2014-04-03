@@ -177,7 +177,7 @@ public class Selection extends Configured implements Tool {
 		String map = "";
 		HashMap<Integer, String> attrs2filterList = new HashMap<Integer, String>();
 		if (!filters.equals("none")) {
-			String[] attrs2filter = filters.split("+");
+			String[] attrs2filter = filters.split("$");
 			for (String attr2filter : attrs2filter) {
 				int attr = Integer.parseInt(attr2filter.split("-")[0]);
 				String filter = attr2filter.split("-")[1];
