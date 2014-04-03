@@ -98,7 +98,7 @@ public class Selection extends Configured implements Tool {
 
 				String[] args = word.toString().split(";");
 
-				for (Map.Entry<Integer,String> entry : filtersMap.entrySet()) {
+				/*for (Map.Entry<Integer,String> entry : filtersMap.entrySet()) {
 					System.out.println("entry: " + entry.toString());
 					int attrNr = entry.getKey().intValue();
 					String filter = entry.getValue();
@@ -106,8 +106,9 @@ public class Selection extends Configured implements Tool {
 					if (!args[attrNr].equals(filter)) {
 						return;
 					}
-				}
-				output.collect(word, one);
+				}*/
+				if(args[0].equals("561103922"))
+					output.collect(word, one);
 			}
 		}
 	}
@@ -177,7 +178,7 @@ public class Selection extends Configured implements Tool {
 		String map = "";
 		HashMap<Integer, String> attrs2filterList = new HashMap<Integer, String>();
 		if (!filters.equals("none")) {
-			String[] attrs2filter = filters.split("$");
+			String[] attrs2filter = filters.split(":");
 			for (String attr2filter : attrs2filter) {
 				int attr = Integer.parseInt(attr2filter.split("-")[0]);
 				String filter = attr2filter.split("-")[1];
