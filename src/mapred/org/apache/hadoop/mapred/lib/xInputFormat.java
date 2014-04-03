@@ -148,7 +148,7 @@ implements JobConfigurable {
 		int i = 0;
 		for(Integer NblocksInThisSplit : splitList) {
 			int nFilesToThisSplit = NblocksInThisSplit.intValue();
-			for(int k = 0; i < files.length && k < nFilesToThisSplit; i++, k++) {
+			for(int k = 0; i < files.length && k < nFilesToThisSplit; i++) {
 				FileStatus file = files[i];
 				Path path = file.getPath();
 				long length = file.getLen();
@@ -177,6 +177,7 @@ implements JobConfigurable {
 					}
 					paths.add(path);
 					blocksIds.add(new Long(blockId));
+					k++;
 				}
 			}
 		}

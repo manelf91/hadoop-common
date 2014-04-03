@@ -4634,9 +4634,9 @@ Runnable, TaskTrackerMXBean {
 	public int checkIfRelevantRowGroup(long blockId, String filters) {
 		TreeMap<Integer, String> filtersMap = new TreeMap<Integer, String>();
 
-		// <attribute number #>-<predicate>;<attribute number #>-<predicate>...
+		// <attribute number #>-<predicate>$<attribute number #>-<predicate>...
 		if(filters != null) {
-			String[] filtersArr = filters.split(":");
+			String[] filtersArr = filters.split("$");
 			for (String filter : filtersArr) {
 				Integer attrNr = Integer.parseInt(filter.split("-")[0]);
 				String attrValue = filter.split("-")[1];
