@@ -47,7 +47,7 @@ public class xIndexUtils {
 
 						initializeIndexForCurrentColumn(columnNr);
 						if(first) {
-							block2split.put(blockIdL, new HashMap<Integer, Long>());
+							//block2split.put(blockIdL, new HashMap<Integer, Long>());
 							blockIdOfFirstBlock = blockIdL;
 						}
 
@@ -59,10 +59,10 @@ public class xIndexUtils {
 							addEntriesToIndex(new String(entry), blockIdL, columnNr);
 						}
 
-						HashMap<Integer, Long> split = (HashMap<Integer, Long>) block2split.get(blockIdOfFirstBlock);
-						split.put(columnNr, blockIdL);
+						//HashMap<Integer, Long> split = (HashMap<Integer, Long>) block2split.get(blockIdOfFirstBlock);
+						//split.put(columnNr, blockIdL);
 
-						//xLog.print("xIndexUtils: index size:\n" + getIndexSizeStr());
+						xLog.print("xIndexUtils: index size:\n" + getIndexSizeStr());
 					}
 					catch (IOException e) {
 						xLog.print(e.toString());
@@ -81,9 +81,8 @@ public class xIndexUtils {
 	}
 
 	private static void initializeIndexForCurrentColumn(Integer columnNr) {
-		TreeMap<String, TreeSet<Long>> currentColumnIndex = index.get(columnNr);
-		if(currentColumnIndex == null) {
-			currentColumnIndex = new TreeMap<String, TreeSet<Long>>();
+		if(!index.containsKey(columnNr)) {
+			TreeMap<String, TreeSet<Long>> currentColumnIndex = new TreeMap<String, TreeSet<Long>>();
 			index.put(columnNr, currentColumnIndex);
 		}
 	}
