@@ -493,7 +493,7 @@ class BlockReceiver implements java.io.Closeable, FSConstants {
 
 					/* mgferreira */
 					if(createIndex) {
-						byte[] copy = Arrays.copyOf(pktBuf, pktBuf.length);
+						/*byte[] copy = Arrays.copyOf(pktBuf, pktBuf.length);
 						currentCompressedData.write(copy, dataOff, len);
 						currentCompressedData.flush();
 						if(lastPacketInBlock) {
@@ -501,7 +501,7 @@ class BlockReceiver implements java.io.Closeable, FSConstants {
 							xBlockQueueItem item = new xBlockQueueItem(block.getBlockId(), currentCompressedData, currentColumn, first);
 							xIndexUtils.queue.add(item);
 							currentCompressedData = new ByteArrayOutputStream();
-						}
+						}*/
 					}
 
 					// If this is a partial chunk, then verify that this is the only
