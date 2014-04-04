@@ -328,7 +328,7 @@ class DataXceiver implements Runnable, FSConstants {
 					xLog.print("DataXceiver: A datanode has requested the row group " + blockId);
 					// <attribute number #>-<predicate>;<attribute number #>-<predicate>...
 					if(filters != null) {
-						String[] filtersArr = filters.split(":");
+						String[] filtersArr = filters.split("$");
 						for (String filter : filtersArr) {
 							Integer attrNr = Integer.parseInt(filter.split("-")[0]);
 							String attrValue = filter.split("-")[1];
