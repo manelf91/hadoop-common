@@ -29,6 +29,7 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.TreeMap;
 
 import org.apache.commons.logging.Log;
@@ -322,7 +323,7 @@ class DataXceiver implements Runnable, FSConstants {
 
 					/*mgferreira*/
 					byte protocol = 0;
-					TreeMap<Integer, String> filtersMap = new TreeMap<Integer, String>();
+					HashMap<Integer, String> filtersMap = new HashMap<Integer, String>();
 
 					xLog.print("DataXceiver: A datanode has requested the row group " + blockId);
 					// <attribute number #>-<predicate>;<attribute number #>-<predicate>...

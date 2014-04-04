@@ -4632,7 +4632,7 @@ Runnable, TaskTrackerMXBean {
 	/*mgferreira*/
 	@Override
 	public int checkIfRelevantRowGroup(long blockId, String filters) {
-		TreeMap<Integer, String> filtersMap = new TreeMap<Integer, String>();
+		HashMap<Integer, String> filtersMap = new HashMap<Integer, String>();
 
 		// <attribute number #>-<predicate>$<attribute number #>-<predicate>...
 		if(filters != null) {
