@@ -290,10 +290,6 @@ Runnable, TaskTrackerMXBean {
 	private final JobTokenSecretManager jobTokenSecretManager
 	= new JobTokenSecretManager();
 
-	/* mgferreira */
-	// attrNr -> filter
-	TreeMap<Integer, String> filters = new TreeMap<Integer, String>();
-
 	JobTokenSecretManager getJobTokenSecretManager() {
 		return jobTokenSecretManager;
 	}
