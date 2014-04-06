@@ -339,6 +339,9 @@
     <pathelement location="${build.classes}"/>
     <path refid="src.lib.classpath"/>
     <pathelement location="${conf.dir}"/>
+    <fileset dir="${basedir}">
+	<include name="commons-primitives-1.0.jar"/>
+    </fileset>
   </path>
 
   <path id="src.lib.classpath">
@@ -759,8 +762,7 @@
     </tar>
     <property name="jar.properties.list"
       value="commons-logging.properties, log4j.properties, hadoop-metrics.properties, task-log4j.properties"/>
-    <jar jarfile="${core.final.name}.jar"
-         basedir="${build.classes}">
+    <jar jarfile="${core.final.name}.jar" basedir="${build.classes}" >
       <manifest>
         <section name="org/apache/hadoop">
           <attribute name="Implementation-Title" value="Hadoop"/>
