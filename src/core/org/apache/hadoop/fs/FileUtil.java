@@ -341,6 +341,7 @@ public class FileUtil {
 				return false;
 			}
 			FileStatus contents[] = srcFS.listStatus(src);
+			Arrays.sort(contents);
 			for (int i = 0; i < contents.length; i++) {
 				copy(srcFS, contents[i].getPath(), 
 						new File(dst, contents[i].getPath().getName()),
