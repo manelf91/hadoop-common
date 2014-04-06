@@ -62,8 +62,9 @@ public class xIndexUtils {
 
 						HashMap<Integer, Long> split = block2split.get(blockIdOfFirstBlock);
 						split.put(columnNr, blockIdL);
-
-						xLog.print("xIndexUtils: index size:\n" + getIndexSizeStr());
+						
+						xLog.print("Added blocknr " + columnNr.intValue() + " to index");
+						//xLog.print("xIndexUtils: index size:\n" + getIndexSizeStr());
 					}
 					catch (IOException e) {
 						xLog.print(e.toString());
