@@ -57,7 +57,7 @@ public class xIndexUtils {
 
 						String entry = "";
 						while((entry = br.readLine()) != null) {
-							addEntriesToIndex(new String(entry), blockId, columnNr);
+							addEntriesToIndex(new String(entry), blockIdL, columnNr);
 						}
 
 						HashMap<Integer, Long> split = block2split.get(blockIdOfFirstBlock);
@@ -89,7 +89,7 @@ public class xIndexUtils {
 		}
 	}
 
-	private static void addEntriesToIndex(String entry, long blockId, Integer columnNr) {
+	private static void addEntriesToIndex(String entry, Long blockId, Integer columnNr) {
 		HashMap<String,  ArrayList<Long>> currentColumnIndex = index.get(columnNr);
 		 ArrayList<Long> blocksForEntry = currentColumnIndex.get(entry);
 		if(blocksForEntry == null) {
