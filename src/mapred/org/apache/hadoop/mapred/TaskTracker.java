@@ -4628,24 +4628,14 @@ Runnable, TaskTrackerMXBean {
 	/*mgferreira*/
 	@Override
 	public int checkIfRelevantRowGroup(long blockId, String filters) {
-		HashMap<Integer, String> filtersMap = new HashMap<Integer, String>();
-
-		// <attribute number #>-<predicate>$<attribute number #>-<predicate>...
-		if(filters != null) {
-			String[] filtersArr = filters.split("$");
-			for (String filter : filtersArr) {
-				Integer attrNr = Integer.parseInt(filter.split("-")[0]);
-				String attrValue = filter.split("-")[1];
-				filtersMap.put(attrNr, attrValue);
-			}
-		}
+		HashMap<Integer, String> filtersMap = xIndexUtils.buildFiltersMap(filters);
 		return xIndexUtils.checkIfRelevantRowGroup(filtersMap, blockId);
 	}
 
 	@Override
 	public String getIndexSize() {
 		String indexSize = xIndexUtils.getIndexSizeStr();
-		return indexSize;		
+		return indexSize;
 	}
 
 	@Override

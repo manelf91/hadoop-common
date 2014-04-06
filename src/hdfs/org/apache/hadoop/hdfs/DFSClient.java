@@ -1871,7 +1871,9 @@ public class DFSClient implements FSConstants, java.io.Closeable {
     	  xLog.print("DFSClient: remote row group " + blockId + " is irrelevant");
     	  throw new IrrelevantRemoteBlockException();
       }
-      xLog.print("DFSClient: remote row group " + blockId + " is relevant");
+      if (LineReader.remoteReadAppBlock && file.contains(firstColumnId)) {
+    	  xLog.print("DFSClient: remote row group " + blockId + " is relevant");
+      }
       if (status != DataTransferProtocol.OP_STATUS_SUCCESS) {
         if (status == DataTransferProtocol.OP_STATUS_ERROR_ACCESS_TOKEN) {
           throw new InvalidBlockTokenException(

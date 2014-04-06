@@ -9,18 +9,18 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.ObjectOutputStream;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.TreeSet;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.zip.GZIPInputStream;
 
+import org.apache.commons.collections.primitives.ArrayLongList;
+
 public class xIndexUtils {
 
-	private static Long blockIdOfFirstBlock = new Long(0);
+	private static Long blockIdOfFirstBlock;
 	// <attribute nr, <attribute value, blockId>>
-	public final static HashMap<Integer, HashMap<String, ArrayList<Long>>> index = new HashMap<Integer, HashMap<String, ArrayList<Long>>> ();
+	public final static HashMap<Integer, HashMap<String, ArrayLongList>> index = new HashMap<Integer, HashMap<String, ArrayLongList>> ();
 
 	//first block of split N -> first block of split N, second block of split N, third block of split N... 
 	private static HashMap<Long, HashMap<Integer, Long>> block2split = new HashMap<Long,  HashMap<Integer, Long>>();
@@ -38,7 +38,8 @@ public class xIndexUtils {
 						xBlockQueueItem item = queue.take();
 
 						ByteArrayOutputStream compressedData = item.data;
-						Long blockIdL = new Long(item.blockId);
+						long blockId =item.blockId;
+						Long blockIdL = new Long(blockId);
 						boolean first = item.first;
 						Integer columnNr = new Integer(item.columnNr);
 
@@ -55,7 +56,7 @@ public class xIndexUtils {
 
 						String entry = "";
 						while((entry = br.readLine()) != null) {
-							addEntriesToIndex(new String(entry), blockIdL, columnNr);
+							addEntriesToIndex(new String(entry), blockId, columnNr);
 						}
 
 						HashMap<Integer, Long> split = block2split.get(blockIdOfFirstBlock);
@@ -81,16 +82,16 @@ public class xIndexUtils {
 
 	private static void initializeIndexForCurrentColumn(Integer columnNr) {
 		if(!index.containsKey(columnNr)) {
-			HashMap<String, ArrayList<Long>> currentColumnIndex = new HashMap<String, ArrayList<Long>>();
+			HashMap<String, ArrayLongList> currentColumnIndex = new HashMap<String, ArrayLongList>();
 			index.put(columnNr, currentColumnIndex);
 		}
 	}
 
-	private static void addEntriesToIndex(String entry, Long blockId, Integer columnNr) {
-		HashMap<String, ArrayList<Long>> currentColumnIndex = index.get(columnNr);
-		ArrayList<Long> blocksForEntry = currentColumnIndex.get(entry);
+	private static void addEntriesToIndex(String entry, long blockId, Integer columnNr) {
+		HashMap<String, ArrayLongList> currentColumnIndex = index.get(columnNr);
+		ArrayLongList blocksForEntry = currentColumnIndex.get(entry);
 		if(blocksForEntry == null) {
-			blocksForEntry = new ArrayList<Long>();
+			blocksForEntry = new ArrayLongList(1);
 			currentColumnIndex.put(entry, blocksForEntry);
 		}
 		blocksForEntry.add(blockId);
@@ -130,7 +131,7 @@ public class xIndexUtils {
 			String predicate = filters.get(attrNr);
 			Long blockIdOfAttrNr = split.get(attrNr);
 
-			ArrayList<Long> relevantBlocks = index.get(attrNr).get(predicate);
+			ArrayLongList relevantBlocks = index.get(attrNr).get(predicate);
 
 			if((relevantBlocks == null) || (!relevantBlocks.contains(blockIdOfAttrNr))) {
 				xLog.print("xIndexUtils: The row group " + blockId + " is irrelevant");
@@ -148,7 +149,7 @@ public class xIndexUtils {
 		DataOutputStream dos;
 		ObjectOutputStream oos;
 		try {
-			fout = new FileOutputStream("/home/mgferreira/index.obj");
+			fout = new FileOutputStream("index.obj");
 			dos = new DataOutputStream(fout);
 			oos = new ObjectOutputStream(dos);
 			oos.writeObject(index);
@@ -157,11 +158,11 @@ public class xIndexUtils {
 			indexSize += "total size: " + dos.size() + " bytes\n";
 
 			for (Integer attr : index.keySet()){
-				HashMap<String, ArrayList<Long>> attrIndex = index.get(attr);
+				HashMap<String, ArrayLongList> attrIndex = index.get(attr);
 
 				indexSize += "attribute " + attr.intValue() + " has " + attrIndex.size() + " entries \n";
 
-				fout = new FileOutputStream("/home/mgferreira/index.obj");
+				fout = new FileOutputStream("index.obj");
 				dos = new DataOutputStream(fout);
 				oos = new ObjectOutputStream(dos);
 				oos.writeObject(attrIndex);
@@ -175,5 +176,19 @@ public class xIndexUtils {
 		long end = System.currentTimeMillis();
 		indexSize += "time to measure index size: " + (end-startTime) + "milliseconds\n";
 		return indexSize;
+	}
+
+	public static HashMap<Integer, String> buildFiltersMap(String filters) {
+		HashMap<Integer, String> filtersMap = new HashMap<Integer, String>();
+		// <attribute number #>-<predicate>;<attribute number #>-<predicate>...
+		if(filters != null) {
+			String[] filtersArr = filters.split(",");
+			for (String filter : filtersArr) {
+				Integer attrNr = Integer.parseInt(filter.split("-")[0]);
+				String attrValue = filter.split("-")[1];
+				filtersMap.put(attrNr, attrValue);
+			}
+		}
+		return filtersMap;
 	}
 }

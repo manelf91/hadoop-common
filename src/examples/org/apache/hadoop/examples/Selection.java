@@ -67,11 +67,11 @@ public class Selection extends Configured implements Tool {
 		private static HashMap<Integer, String> filtersMap = new HashMap<Integer, String>();
 
 		public void configure(JobConf job) {        
-			String filters = job.get("filters.map.function");
+			String filters = job.get("filtersMapFunction");
 			System.out.println(filters);
 			if (filters != null) {
 
-				String[] filtersByAttr = filters.split(":");
+				String[] filtersByAttr = filters.split(",");
 
 				for (String filterAttr : filtersByAttr) {
 					String[] attrNrAndFilter = filterAttr.split("-");
@@ -93,12 +93,12 @@ public class Selection extends Configured implements Tool {
 			StringTokenizer itr = new StringTokenizer(line);
 			while (itr.hasMoreTokens()) {
 				word.set(itr.nextToken());
-				
+
 				System.out.println("word: " + word.toString());
 
 				String[] args = word.toString().split(";");
 
-				/*for (Map.Entry<Integer,String> entry : filtersMap.entrySet()) {
+				for (Map.Entry<Integer,String> entry : filtersMap.entrySet()) {
 					System.out.println("entry: " + entry.toString());
 					int attrNr = entry.getKey().intValue();
 					String filter = entry.getValue();
@@ -106,9 +106,8 @@ public class Selection extends Configured implements Tool {
 					if (!args[attrNr].equals(filter)) {
 						return;
 					}
-				}*/
-				if(args[0].equals("561103922"))
-					output.collect(word, one);
+				}
+				output.collect(word, one);
 			}
 		}
 	}
@@ -166,39 +165,36 @@ public class Selection extends Configured implements Tool {
 			conf.setBooleanIfUnset("mapred.locality.or.biggest.tasks.first", false);
 		}
 
-		/* applying filters: <attribute number #>-<predicate>;<attribute number #>-<predicate> */
-		String filters = args[3];
-		if (!filters.equals("none")) {
+		String relevantAttrs = "";
+		String filters = "";
+		String filtersForMapFunction = "";
+
+		String[] filtersANDrelevantAttrs = args[3].split(",");
+		int n = 0;
+		for (String s : filtersANDrelevantAttrs) {
+			String absAttr = "";
+			if(s.contains("=")) {
+				absAttr = s.split("=")[0];
+				String relativeAttrANDfilter = s.split("=")[1];
+				filters += relativeAttrANDfilter + ",";
+				filtersForMapFunction += n + "-" + s.split("=")[1].split("-")[1] + ",";
+			}
+			else {
+				absAttr = s;
+			}
+			relevantAttrs += absAttr + ":";
+			n++;
+		}
+		conf.setIfUnset("relevantAttrs", relevantAttrs);
+		conf.setIfUnset("filtersMapFunction", filtersForMapFunction);
+		if (!filters.equals("")) {
 			conf.setIfUnset("filters", filters);
 		}
 
-		String relevantAttrs = args[4];
-		conf.setIfUnset("relevantAttrs", relevantAttrs);
-		
-		String map = "";
-		HashMap<Integer, String> attrs2filterList = new HashMap<Integer, String>();
-		if (!filters.equals("none")) {
-			String[] attrs2filter = filters.split(":");
-			for (String attr2filter : attrs2filter) {
-				int attr = Integer.parseInt(attr2filter.split("-")[0]);
-				String filter = attr2filter.split("-")[1];
-				attrs2filterList.put(attr, filter);
-			}
-			int i = 0;
-			for (String attrStr : relevantAttrs.split(":")) {
-				int attr = Integer.parseInt(attrStr);
-				String filter = attrs2filterList.get(new Integer(attr));
-				if (filter != null) {
-					map += i + "-" + filter + ":";
-				}
-				i++;
-			}
-			conf.setIfUnset("filters.map.function", map);
-		}
 
-		String[] argsN = new String[args.length-5];
-		for (int i = 5; i < args.length; i++) {
-			argsN[i-5] = args[i];
+		String[] argsN = new String[args.length-4];
+		for (int i = 4; i < args.length; i++) {
+			argsN[i-4] = args[i];
 		}
 
 		// the keys are words (strings)
