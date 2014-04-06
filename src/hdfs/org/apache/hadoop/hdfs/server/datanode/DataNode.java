@@ -131,6 +131,7 @@ import org.apache.hadoop.util.ReflectionUtils;
 import org.apache.hadoop.util.ServicePlugin;
 import org.apache.hadoop.util.StringUtils;
 import org.apache.hadoop.util.VersionInfo;
+import org.apache.hadoop.util.xIndexUtils;
 import org.mortbay.util.ajax.JSON;
 
 /**********************************************************
@@ -177,6 +178,7 @@ public class DataNode extends Configured
   /*mgferreira*/
   public static int columnsPerRowGroup;
   public static int currentColumn = -1;
+  public static ArrayList<Integer> columnsToIndex = new ArrayList<Integer>();
 
   public static final String DN_CLIENTTRACE_FORMAT =
         "src: %s" +      // src IP
@@ -320,6 +322,14 @@ public class DataNode extends Configured
     datanodeObject = this;
     durableSync = conf.getBoolean("dfs.durable.sync", true);
 	columnsPerRowGroup = conf.getInt("columns", 1);
+	String columnsToIndexStr = conf.get("columns.to.index");
+	if (columnsToIndexStr != null) {
+		for (String columnToIndex : columnsToIndexStr.split(";")) {
+			columnsToIndex.add(Integer.parseInt(columnToIndex));
+		}
+	}
+	xIndexUtils.initializeIndexBuilderThread();
+	
     this.userWithLocalPathAccess = conf
         .get(DFSConfigKeys.DFS_BLOCK_LOCAL_PATH_ACCESS_USER_KEY);
     try {

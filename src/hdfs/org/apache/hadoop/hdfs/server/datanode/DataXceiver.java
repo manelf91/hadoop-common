@@ -67,9 +67,6 @@ class DataXceiver implements Runnable, FSConstants {
 	DataXceiverServer dataXceiverServer;
 	private boolean connectToDnViaHostname;
 
-	/*mgferreira*/
-	ArrayList<Integer> columnsToIndex = new ArrayList<Integer>();
-
 	public DataXceiver(Socket s, DataNode datanode, 
 			DataXceiverServer dataXceiverServer) {
 
@@ -83,14 +80,6 @@ class DataXceiver implements Runnable, FSConstants {
 		this.connectToDnViaHostname = datanode.getConf().getBoolean(
 				DFSConfigKeys.DFS_DATANODE_USE_DN_HOSTNAME,
 				DFSConfigKeys.DFS_DATANODE_USE_DN_HOSTNAME_DEFAULT);
-
-		String columnsToIndexStr = datanode.getConf().get("columns.to.index");
-		if (columnsToIndexStr != null) {
-			for (String columnToIndex : columnsToIndexStr.split(";")) {
-				columnsToIndex.add(Integer.parseInt(columnToIndex));
-			}
-		}
-		xIndexUtils.initializeIndexBuilderThread();
 	}
 
 	/**
@@ -637,7 +626,7 @@ class DataXceiver implements Runnable, FSConstants {
 					s.getLocalSocketAddress().toString(),
 					isRecovery, client, srcDataNode, datanode);
 
-			
+
 			/*mgferreira*/ 
 			blockReceiver.currentColumn =  getCurrentColumnNr();	
 			blockReceiver.createIndex = checkIfGoingToIndex();
@@ -773,8 +762,8 @@ class DataXceiver implements Runnable, FSConstants {
 	}
 
 	private boolean checkIfFirstBlock() {
-		if (columnsToIndex.size() > 0) {
-			if(columnsToIndex.get(0).equals(new Integer(DataNode.currentColumn))) {
+		if (datanode.columnsToIndex.size() > 0) {
+			if(datanode.columnsToIndex.get(0).equals(new Integer(DataNode.currentColumn))) {
 				return true;
 			}
 		}
@@ -782,7 +771,7 @@ class DataXceiver implements Runnable, FSConstants {
 	}
 
 	private boolean checkIfGoingToIndex() {		
-		if(columnsToIndex.contains(new Integer(DataNode.currentColumn))) {
+		if(datanode.columnsToIndex.contains(new Integer(DataNode.currentColumn))) {
 			return true;
 		}
 		else {
