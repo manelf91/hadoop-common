@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.ObjectOutputStream;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -20,7 +21,7 @@ public class xIndexUtils {
 
 	private static Long blockIdOfFirstBlock;
 	// <attribute nr, <attribute value, blockId>>
-	public final static HashMap<Integer, HashMap<String, ArrayLongList>> index = new HashMap<Integer, HashMap<String, ArrayLongList>> ();
+	public final static HashMap<Integer, HashMap<String, ArrayList<Long>>> index = new HashMap<Integer, HashMap<String,  ArrayList<Long>>> ();
 
 	//first block of split N -> first block of split N, second block of split N, third block of split N... 
 	private static HashMap<Long, HashMap<Integer, Long>> block2split = new HashMap<Long,  HashMap<Integer, Long>>();
@@ -76,22 +77,23 @@ public class xIndexUtils {
 	}
 
 	public static void initializeIndexBuilderThread() {
+		xLog.print("xIndexUtils: Start running IndexBuilderThread\n");
 		indexBuilder = new Thread(new xIndexUtils.IndexBuilder());
 		indexBuilder.start();
 	}
 
 	private static void initializeIndexForCurrentColumn(Integer columnNr) {
 		if(!index.containsKey(columnNr)) {
-			HashMap<String, ArrayLongList> currentColumnIndex = new HashMap<String, ArrayLongList>();
+			HashMap<String,  ArrayList<Long>> currentColumnIndex = new HashMap<String,  ArrayList<Long>>();
 			index.put(columnNr, currentColumnIndex);
 		}
 	}
 
 	private static void addEntriesToIndex(String entry, long blockId, Integer columnNr) {
-		HashMap<String, ArrayLongList> currentColumnIndex = index.get(columnNr);
-		ArrayLongList blocksForEntry = currentColumnIndex.get(entry);
+		HashMap<String,  ArrayList<Long>> currentColumnIndex = index.get(columnNr);
+		 ArrayList<Long> blocksForEntry = currentColumnIndex.get(entry);
 		if(blocksForEntry == null) {
-			blocksForEntry = new ArrayLongList(1);
+			blocksForEntry = new  ArrayList<Long>();
 			currentColumnIndex.put(entry, blocksForEntry);
 		}
 		blocksForEntry.add(blockId);
@@ -131,7 +133,7 @@ public class xIndexUtils {
 			String predicate = filters.get(attrNr);
 			Long blockIdOfAttrNr = split.get(attrNr);
 
-			ArrayLongList relevantBlocks = index.get(attrNr).get(predicate);
+			 ArrayList<Long> relevantBlocks = index.get(attrNr).get(predicate);
 
 			if((relevantBlocks == null) || (!relevantBlocks.contains(blockIdOfAttrNr))) {
 				xLog.print("xIndexUtils: The row group " + blockId + " is irrelevant");
@@ -158,7 +160,7 @@ public class xIndexUtils {
 			indexSize += "total size: " + dos.size() + " bytes\n";
 
 			for (Integer attr : index.keySet()){
-				HashMap<String, ArrayLongList> attrIndex = index.get(attr);
+				HashMap<String,  ArrayList<Long>> attrIndex = index.get(attr);
 
 				indexSize += "attribute " + attr.intValue() + " has " + attrIndex.size() + " entries \n";
 
