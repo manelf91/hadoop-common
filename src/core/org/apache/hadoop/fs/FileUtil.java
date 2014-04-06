@@ -304,6 +304,7 @@ public class FileUtil {
 				return false;
 			}
 			File contents[] = listFiles(src);
+			Arrays.sort(contents);
 			for (int i = 0; i < contents.length; i++) {
 				copy(contents[i], dstFS, new Path(dst, contents[i].getName()),
 						deleteSource, conf);
