@@ -493,12 +493,14 @@ class BlockReceiver implements java.io.Closeable, FSConstants {
 					out.write(pktBuf, dataOff, len);
 
 					/* mgferreira */
+					xLog.print("BlockReceiver: 1) " + currentColumn + " " + block.getBlockId());
 					if(createIndex) {
 						byte[] copy = Arrays.copyOf(pktBuf, pktBuf.length);
 						currentCompressedData.write(copy, dataOff, len);
 						currentCompressedData.flush();
+						xLog.print("BlockReceiver: 2) " + currentColumn + " " + block.getBlockId());
 						if(lastPacketInBlock) {
-							xLog.print("BlockReceiver: going to add blocknr " + currentColumn + " to queue");
+							xLog.print("BlockReceiver 3): going to add blocknr " + currentColumn + " to queue " + block.getBlockId());
 							currentCompressedData.close();
 							xBlockQueueItem item = new xBlockQueueItem(block.getBlockId(), currentCompressedData, currentColumn, first);
 							xIndexUtils.queue.add(item);
