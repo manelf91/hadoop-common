@@ -65,7 +65,7 @@ public class xIndexUtils {
 						split.put(columnNr, blockIdL);
 						
 						xLog.print("Added blocknr " + columnNr.intValue() + " to index");
-						//xLog.print("xIndexUtils: index size:\n" + getIndexSizeStr());
+						xLog.print("xIndexUtils: index size:\n" + getIndexSizeStr());
 					}
 					catch (Exception e) {
 						xLog.print(e.toString());
