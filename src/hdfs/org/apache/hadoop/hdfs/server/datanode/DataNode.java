@@ -176,9 +176,9 @@ public class DataNode extends Configured
   }
   
   /*mgferreira*/
-  public static int columnsPerRowGroup;
-  public static int currentColumn = -1;
-  public static ArrayList<Integer> columnsToIndex = new ArrayList<Integer>();
+  public int columnsPerRowGroup;
+  public int currentColumn = -1;
+  public ArrayList<Integer> columnsToIndex = new ArrayList<Integer>();
 
   public static final String DN_CLIENTTRACE_FORMAT =
         "src: %s" +      // src IP

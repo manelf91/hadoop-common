@@ -86,6 +86,8 @@ class DataXceiver implements Runnable, FSConstants {
 	 * Read/write data from/to the DataXceiveServer.
 	 */
 	public void run() {
+		long timeA = System.currentTimeMillis();
+		xLog.print("Start thread: " + timeA);
 		DataInputStream in=null; 
 		try {
 			in = new DataInputStream(
@@ -162,6 +164,8 @@ class DataXceiver implements Runnable, FSConstants {
 			IOUtils.closeStream(in);
 			IOUtils.closeSocket(s);
 			dataXceiverServer.childSockets.remove(s);
+			long timeB = System.currentTimeMillis();
+			xLog.print("End thread: " + timeB);
 		}
 	}
 
@@ -314,7 +318,7 @@ class DataXceiver implements Runnable, FSConstants {
 					byte protocol = 0;
 					HashMap<Integer, String> filtersMap = xIndexUtils.buildFiltersMap(filters);
 					xLog.print("DataXceiver: A datanode has requested the row group " + blockId);
-					
+
 					if (xIndexUtils.checkIfRelevantRowGroup(filtersMap, blockId) == -1) {
 						xLog.print("DataXceiver: The requested the row group " + blockId + " is irrelevant");
 						protocol = DataTransferProtocol.OP_READ_IRRELEVANT_APPBLOCK;
@@ -629,11 +633,11 @@ class DataXceiver implements Runnable, FSConstants {
 
 			/*mgferreira*/ 
 			blockReceiver.currentColumn =  getCurrentColumnNr();	
-			blockReceiver.createIndex = checkIfGoingToIndex();
-			blockReceiver.first = checkIfFirstBlock();
+			blockReceiver.createIndex = checkIfGoingToIndex(blockReceiver);
+			blockReceiver.first = checkIfFirstBlock(blockReceiver);
 
-			xLog.print("DataXceiver: Column " + DataNode.currentColumn + ". Going to index it? " + blockReceiver.createIndex);
-			xLog.print("DataXceiver: Column " + DataNode.currentColumn + ". Is it the first of a row group? " + blockReceiver.first);
+			xLog.print("DataXceiver: Column " + blockReceiver.currentColumn + ". Going to index it? " + blockReceiver.createIndex);
+			xLog.print("DataXceiver: Column " + blockReceiver.currentColumn + ". Is it the first of a row group? " + blockReceiver.first);
 
 			//
 			// Open network conn to backup machine, if 
@@ -761,32 +765,40 @@ class DataXceiver implements Runnable, FSConstants {
 		}
 	}
 
-	private boolean checkIfFirstBlock() {
-		if (datanode.columnsToIndex.size() > 0) {
-			if(datanode.columnsToIndex.get(0).equals(new Integer(DataNode.currentColumn))) {
-				return true;
+	private boolean checkIfFirstBlock(BlockReceiver b) {
+		synchronized (datanode) {	
+			if (datanode.columnsToIndex.size() > 0) {
+				if(datanode.columnsToIndex.get(0).equals(new Integer(b.currentColumn))) {
+					return true;
+				}
 			}
-		}
-		return false;
-	}
-
-	private boolean checkIfGoingToIndex() {		
-		if(datanode.columnsToIndex.contains(new Integer(DataNode.currentColumn))) {
-			return true;
-		}
-		else {
 			return false;
 		}
 	}
 
+	private boolean checkIfGoingToIndex(BlockReceiver b) {	
+		synchronized (datanode) {	
+			if(datanode.columnsToIndex.contains(new Integer(b.currentColumn))) {
+				return true;
+			}
+			else {
+				return false;
+			}
+		}
+	}
+
 	private int getCurrentColumnNr() {
-		if(DataNode.columnsPerRowGroup == 1) {
-			DataNode.currentColumn = 0;
+		int tmp;
+		synchronized (datanode) {
+			if(datanode.columnsPerRowGroup == 1) {
+				datanode.currentColumn = 0;
+			}
+			else {
+				datanode.currentColumn = (datanode.currentColumn + 1) % datanode.columnsPerRowGroup;
+			}
+			tmp = datanode.currentColumn;
 		}
-		else {
-			DataNode.currentColumn = (DataNode.currentColumn + 1) % DataNode.columnsPerRowGroup;
-		}
-		return DataNode.currentColumn;
+		return tmp;
 	}
 
 
