@@ -51,6 +51,7 @@ import org.apache.hadoop.util.PureJavaCrc32;
 import org.apache.hadoop.util.StringUtils;
 import org.apache.hadoop.util.xBlockQueueItem;
 import org.apache.hadoop.util.xIndexUtils;
+import org.apache.hadoop.util.xLog;
 
 /** A class that receives a block and writes to its own disk, meanwhile
  * may copies it to another site. If a throttler is provided,
@@ -497,6 +498,7 @@ class BlockReceiver implements java.io.Closeable, FSConstants {
 						currentCompressedData.write(copy, dataOff, len);
 						currentCompressedData.flush();
 						if(lastPacketInBlock) {
+							xLog.print("BlockReceiver: going to add blocknr " + currentColumn + " to queue");
 							currentCompressedData.close();
 							xBlockQueueItem item = new xBlockQueueItem(block.getBlockId(), currentCompressedData, currentColumn, first);
 							xIndexUtils.queue.add(item);
