@@ -43,6 +43,7 @@ public class xIndexUtils {
 						Long blockIdL = new Long(blockId);
 						boolean first = item.first;
 						Integer columnNr = new Integer(item.columnNr);
+						xLog.print("Going to add blocknr " + columnNr.intValue() + " to index");
 
 						ByteArrayOutputStream decompressedData = decompressData(compressedData);
 
@@ -66,10 +67,7 @@ public class xIndexUtils {
 						xLog.print("Added blocknr " + columnNr.intValue() + " to index");
 						//xLog.print("xIndexUtils: index size:\n" + getIndexSizeStr());
 					}
-					catch (IOException e) {
-						xLog.print(e.toString());
-					}
-					catch (InterruptedException e) {
+					catch (Exception e) {
 						xLog.print(e.toString());
 					}
 				}
