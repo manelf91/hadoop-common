@@ -69,8 +69,8 @@ public class xIndexUtils {
 						split.put(columnNr, blockIdL);
 
 						xLog.print("Added blocknr " + columnNr.intValue() + " to index");
-						xLog.print("xIndexUtils: index1 size:\n" + getIndexSizeStr());
-						xLog.print("xIndexUtils: index2 size:\n" + getIndexSizeStr2());
+						printIndexSize();
+						printIndex2Size();
 					}
 					catch (Exception e) {
 						xLog.print(e.toString());
@@ -161,8 +161,8 @@ public class xIndexUtils {
 		return 1;
 	}
 	
-	public static String getIndexSizeStr2() {
-		String indexSize = "[i2] # Attributes: " + index2.size() + "\n";
+	public static void printIndex2Size() {
+		System.out.println("[i2] # Attributes: " + index2.size());
 		long startTime = System.currentTimeMillis();
 		FileOutputStream fout;
 		DataOutputStream dos;
@@ -174,21 +174,21 @@ public class xIndexUtils {
 			oos.writeObject(index2);
 			oos.flush();
 			oos.close();
-			indexSize += "[i2] total size: " + dos.size() + " bytes\n";
+			System.out.println("[i2] total size: " + dos.size() + " bytes");
 
 			for (Integer attr : index2.keySet()){
 				HashMap<Long,  ArrayList<String>> attrIndex = index2.get(attr);
-				indexSize += "[i2] attribute " + attr.intValue() + " has " + attrIndex.size() + " entries \n";
+				System.out.println("[i2] attribute " + attr.intValue() + " has " + attrIndex.size() + " entries");
 				for (Long block : attrIndex.keySet()) {
 					ArrayList<String> stringList = attrIndex.get(block);
-					indexSize += "[i2] " + attr + " " + block + ": " +  stringList.size() + "\n";
+					System.out.println("[i2] " + attr + " " + block + ": " +  stringList.size());
 					
 					long chars = 0;
 					for (String s : stringList) {
 						chars += s.length();
-						indexSize += "[i2] !!!" + attr + " " + block + ": " + s + "!!!\n";
+						System.out.println("[i2] !!!" + attr + " " + block + ": " + s + "!!!");
 					}
-					indexSize += "[i2] chars: " + chars + "\n";
+					System.out.println("[i2] chars: " + chars);
 				}
 				fout = new FileOutputStream("index.obj");
 				dos = new DataOutputStream(fout);
@@ -196,18 +196,17 @@ public class xIndexUtils {
 				oos.writeObject(attrIndex);
 				oos.flush();
 				oos.close();
-				indexSize += "[i2] attribute " + attr.intValue() + " = " + dos.size() + " bytes\n";
+				System.out.println("[i2] attribute " + attr.intValue() + " = " + dos.size() + " bytes");
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 		long end = System.currentTimeMillis();
-		indexSize += "[i2] time to measure index size: " + (end-startTime) + "milliseconds\n";
-		return indexSize;
+		System.out.println("[i2] time to measure index size: " + (end-startTime) + "milliseconds");
 	}
 
-	public static String getIndexSizeStr() {
-		String indexSize = "[i1] # Attributes: " + index.size() + "\n";
+	public static void printIndexSize() {
+		System.out.println("[i1] # Attributes: " + index.size());
 		long startTime = System.currentTimeMillis();
 		FileOutputStream fout;
 		DataOutputStream dos;
@@ -219,16 +218,16 @@ public class xIndexUtils {
 			oos.writeObject(index);
 			oos.flush();
 			oos.close();
-			indexSize += "[i1] total size: " + dos.size() + " bytes\n";
+			System.out.println("[i1] total size: " + dos.size() + " bytes");
 
 			for (Integer attr : index.keySet()){
 				HashMap<String,  ArrayList<Long>> attrIndex = index.get(attr);
-				indexSize += "[i1] attribute " + attr.intValue() + " has " + attrIndex.size() + " entries \n";
+				System.out.println("[i1] attribute " + attr.intValue() + " has " + attrIndex.size() + " entries");
 				int i = 0;
 				for (String entry : attrIndex.keySet()) {
 					ArrayList<Long> blockList = attrIndex.get(entry);
-					indexSize += "[i1] " + attr + "_s" + i + ": " +  blockList.size() + "\n";
-					indexSize += "[i1] !!!" + entry + " !!!SIZE:" + blockList.size() + "!!!\n";
+					System.out.println("[i1] " + attr + "_s" + i + ": " +  blockList.size());
+					System.out.println("[i1] !!!" + entry + " !!!SIZE:" + blockList.size() + "!!!");
 					i++;
 				}
 				fout = new FileOutputStream("index.obj");
@@ -237,14 +236,13 @@ public class xIndexUtils {
 				oos.writeObject(attrIndex);
 				oos.flush();
 				oos.close();
-				indexSize += "[i1] attribute " + attr.intValue() + " = " + dos.size() + " bytes\n";
+				System.out.println("[i1] attribute " + attr.intValue() + " = " + dos.size() + " bytes");
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 		long end = System.currentTimeMillis();
-		indexSize += "[i1] time to measure index size: " + (end-startTime) + "milliseconds\n";
-		return indexSize;
+		System.out.println("[i1] time to measure index size: " + (end-startTime) + "milliseconds");
 	}
 
 	public static HashMap<Integer, String> buildFiltersMap(String filters) {
