@@ -75,8 +75,8 @@ public class xIndexUtils {
 
 						xLog.print("Added blocknr " + columnNr.intValue() + " to index");
 						if(nBlocks == 28 && columnNr.intValue() == 1) {
-							printIndexSize();
-							removeIndexEntriesWithMoreThan(14);
+							//printIndexSize();
+							//removeIndexEntriesWithMoreThan(14);
 							printIndexSize();
 						}
 
@@ -111,6 +111,7 @@ public class xIndexUtils {
 				}
 			}
 			System.out.println("for attr " + attr + " were removed " + countRemoved + " items");
+			countRemoved = 0;
 		}
 	}
 
