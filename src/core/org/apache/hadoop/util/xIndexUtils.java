@@ -21,7 +21,10 @@ public class xIndexUtils {
 
 	private static Long blockIdOfFirstBlock;
 	// <attribute nr, <attribute value, blockId>>
-	public final static HashMap<Integer, HashMap<String, ArrayList<Long>>> index = new HashMap<Integer, HashMap<String,  ArrayList<Long>>> ();
+	public final static HashMap<Integer, HashMap<String, ArrayList<Long>>> index = new HashMap<Integer, HashMap<String,  ArrayList<Long>>>();
+
+	public final static HashMap<Integer, HashMap<Long, ArrayList<String>>> index2 = new HashMap<Integer, HashMap<Long, ArrayList<String>>>();
+
 
 	//first block of split N -> first block of split N, second block of split N, third block of split N... 
 	private static HashMap<Long, HashMap<Integer, Long>> block2split = new HashMap<Long,  HashMap<Integer, Long>>();
@@ -59,13 +62,15 @@ public class xIndexUtils {
 						String entry = "";
 						while((entry = br.readLine()) != null) {
 							addEntriesToIndex(new String(entry), blockIdL, columnNr);
+							addEntriesToIndex2(new String(entry), blockIdL, columnNr);
 						}
 
 						HashMap<Integer, Long> split = block2split.get(blockIdOfFirstBlock);
 						split.put(columnNr, blockIdL);
-						
+
 						xLog.print("Added blocknr " + columnNr.intValue() + " to index");
-						xLog.print("xIndexUtils: index size:\n" + getIndexSizeStr());
+						xLog.print("xIndexUtils: index1 size:\n" + getIndexSizeStr());
+						xLog.print("xIndexUtils: index2 size:\n" + getIndexSizeStr2());
 					}
 					catch (Exception e) {
 						xLog.print(e.toString());
@@ -86,16 +91,29 @@ public class xIndexUtils {
 			HashMap<String,  ArrayList<Long>> currentColumnIndex = new HashMap<String,  ArrayList<Long>>();
 			index.put(columnNr, currentColumnIndex);
 		}
+		if(!index2.containsKey(columnNr)) {
+			HashMap<Long,  ArrayList<String>> currentColumnIndex2 = new HashMap<Long,  ArrayList<String>>();
+			index2.put(columnNr, currentColumnIndex2);
+		}
 	}
 
 	private static void addEntriesToIndex(String entry, Long blockId, Integer columnNr) {
 		HashMap<String,  ArrayList<Long>> currentColumnIndex = index.get(columnNr);
-		 ArrayList<Long> blocksForEntry = currentColumnIndex.get(entry);
+		ArrayList<Long> blocksForEntry = currentColumnIndex.get(entry);
 		if(blocksForEntry == null) {
 			blocksForEntry = new  ArrayList<Long>();
 			currentColumnIndex.put(entry, blocksForEntry);
 		}
 		blocksForEntry.add(blockId);
+	}
+	private static void addEntriesToIndex2(String entry, Long blockIdL, Integer columnNr) {
+		HashMap<Long, ArrayList<String>> currentColumnIndex2 = index2.get(columnNr);
+		ArrayList<String> blocksForEntry2 = currentColumnIndex2.get(blockIdL);
+		if(blocksForEntry2 == null) {
+			blocksForEntry2 = new  ArrayList<String>();
+			currentColumnIndex2.put(blockIdL, blocksForEntry2);
+		}
+		blocksForEntry2.add(entry);
 	}
 
 	public static ByteArrayOutputStream decompressData(ByteArrayOutputStream compressedData) throws IOException {
@@ -132,7 +150,7 @@ public class xIndexUtils {
 			String predicate = filters.get(attrNr);
 			Long blockIdOfAttrNr = split.get(attrNr);
 
-			 ArrayList<Long> relevantBlocks = index.get(attrNr).get(predicate);
+			ArrayList<Long> relevantBlocks = index.get(attrNr).get(predicate);
 
 			if((relevantBlocks == null) || (!relevantBlocks.contains(blockIdOfAttrNr))) {
 				xLog.print("xIndexUtils: The row group " + blockId + " is irrelevant");
@@ -142,9 +160,54 @@ public class xIndexUtils {
 		xLog.print("xIndexUtils: The row group " + blockId + " is relevant");
 		return 1;
 	}
+	
+	public static String getIndexSizeStr2() {
+		String indexSize = "[i2] # Attributes: " + index2.size() + "\n";
+		long startTime = System.currentTimeMillis();
+		FileOutputStream fout;
+		DataOutputStream dos;
+		ObjectOutputStream oos;
+		try {
+			fout = new FileOutputStream("index.obj");
+			dos = new DataOutputStream(fout);
+			oos = new ObjectOutputStream(dos);
+			oos.writeObject(index2);
+			oos.flush();
+			oos.close();
+			indexSize += "[i2] total size: " + dos.size() + " bytes\n";
+
+			for (Integer attr : index2.keySet()){
+				HashMap<Long,  ArrayList<String>> attrIndex = index2.get(attr);
+				indexSize += "[i2] attribute " + attr.intValue() + " has " + attrIndex.size() + " entries \n";
+				for (Long block : attrIndex.keySet()) {
+					ArrayList<String> stringList = attrIndex.get(block);
+					indexSize += "[i2] " + attr + " " + block + ": " +  stringList.size() + "\n";
+					
+					long chars = 0;
+					for (String s : stringList) {
+						chars += s.length();
+						indexSize += "[i2] !!!" + attr + " " + block + ": " + s + "!!!\n";
+					}
+					indexSize += "[i2] chars: " + chars + "\n";
+				}
+				fout = new FileOutputStream("index.obj");
+				dos = new DataOutputStream(fout);
+				oos = new ObjectOutputStream(dos);
+				oos.writeObject(attrIndex);
+				oos.flush();
+				oos.close();
+				indexSize += "[i2] attribute " + attr.intValue() + " = " + dos.size() + " bytes\n";
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		long end = System.currentTimeMillis();
+		indexSize += "[i2] time to measure index size: " + (end-startTime) + "milliseconds\n";
+		return indexSize;
+	}
 
 	public static String getIndexSizeStr() {
-		String indexSize = "# Attributes: " + index.size() + "\n";
+		String indexSize = "[i1] # Attributes: " + index.size() + "\n";
 		long startTime = System.currentTimeMillis();
 		FileOutputStream fout;
 		DataOutputStream dos;
@@ -156,26 +219,31 @@ public class xIndexUtils {
 			oos.writeObject(index);
 			oos.flush();
 			oos.close();
-			indexSize += "total size: " + dos.size() + " bytes\n";
+			indexSize += "[i1] total size: " + dos.size() + " bytes\n";
 
 			for (Integer attr : index.keySet()){
 				HashMap<String,  ArrayList<Long>> attrIndex = index.get(attr);
-
-				indexSize += "attribute " + attr.intValue() + " has " + attrIndex.size() + " entries \n";
-
+				indexSize += "[i1] attribute " + attr.intValue() + " has " + attrIndex.size() + " entries \n";
+				int i = 0;
+				for (String entry : attrIndex.keySet()) {
+					ArrayList<Long> blockList = attrIndex.get(entry);
+					indexSize += "[i1] " + attr + "_s" + i + ": " +  blockList.size() + "\n";
+					indexSize += "[i1] !!!" + entry + " !!!SIZE:" + blockList.size() + "!!!\n";
+					i++;
+				}
 				fout = new FileOutputStream("index.obj");
 				dos = new DataOutputStream(fout);
 				oos = new ObjectOutputStream(dos);
 				oos.writeObject(attrIndex);
 				oos.flush();
 				oos.close();
-				indexSize += "attribute " + attr.intValue() + " = " + dos.size() + " bytes\n";
+				indexSize += "[i1] attribute " + attr.intValue() + " = " + dos.size() + " bytes\n";
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 		long end = System.currentTimeMillis();
-		indexSize += "time to measure index size: " + (end-startTime) + "milliseconds\n";
+		indexSize += "[i1] time to measure index size: " + (end-startTime) + "milliseconds\n";
 		return indexSize;
 	}
 

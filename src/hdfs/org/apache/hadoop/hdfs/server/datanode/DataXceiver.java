@@ -86,8 +86,6 @@ class DataXceiver implements Runnable, FSConstants {
 	 * Read/write data from/to the DataXceiveServer.
 	 */
 	public void run() {
-		long timeA = System.currentTimeMillis();
-		xLog.print("Start thread: " + timeA);
 		DataInputStream in=null; 
 		try {
 			in = new DataInputStream(
@@ -164,8 +162,6 @@ class DataXceiver implements Runnable, FSConstants {
 			IOUtils.closeStream(in);
 			IOUtils.closeSocket(s);
 			dataXceiverServer.childSockets.remove(s);
-			long timeB = System.currentTimeMillis();
-			xLog.print("End thread: " + timeB);
 		}
 	}
 
