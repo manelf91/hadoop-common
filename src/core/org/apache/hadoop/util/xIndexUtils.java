@@ -254,12 +254,12 @@ public class xIndexUtils {
 				HashMap<String,  ArrayList<Long>> attrIndex = index.get(attr);
 				System.out.println("[i1] attribute " + attr.intValue() + " has " + attrIndex.size() + " entries");
 				int i = 0;
-				for (String entry : attrIndex.keySet()) {
+				/*for (String entry : attrIndex.keySet()) {
 					ArrayList<Long> blockList = attrIndex.get(entry);
 					System.out.println("[i1] " + attr + "_s" + i + ": " +  blockList.size());
 					System.out.println("[i1] !!!" + entry + " !!!SIZE:" + blockList.size() + "!!!");
 					i++;
-				}
+				}*/
 				fout = new FileOutputStream("index.obj");
 				dos = new DataOutputStream(fout);
 				oos = new ObjectOutputStream(dos);
