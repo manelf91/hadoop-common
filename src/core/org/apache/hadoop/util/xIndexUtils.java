@@ -74,8 +74,8 @@ public class xIndexUtils {
 						split.put(columnNr, blockIdL);
 
 						xLog.print("Added blocknr " + columnNr.intValue() + " to index");
-						printIndexSize();
 						if(nBlocks == 28) {
+							printIndexSize();
 							removeIndexEntriesWithMoreThan(14);
 							printIndexSize();
 						}
