@@ -11,6 +11,8 @@ import java.io.ObjectOutputStream;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.zip.GZIPInputStream;
@@ -31,6 +33,8 @@ public class xIndexUtils {
 
 	public static BlockingQueue<xBlockQueueItem> queue = new LinkedBlockingQueue<xBlockQueueItem>(200);
 	static Thread indexBuilder = null;
+
+	public static int nBlocks = 0;
 
 	public static class IndexBuilder implements Runnable {
 
@@ -54,6 +58,7 @@ public class xIndexUtils {
 						if(first) {
 							block2split.put(blockIdL, new HashMap<Integer, Long>());
 							blockIdOfFirstBlock = blockIdL;
+							nBlocks++;
 						}
 
 						ByteArrayInputStream bais = new ByteArrayInputStream(decompressedData.toByteArray());
@@ -62,7 +67,7 @@ public class xIndexUtils {
 						String entry = "";
 						while((entry = br.readLine()) != null) {
 							addEntriesToIndex(new String(entry), blockIdL, columnNr);
-							addEntriesToIndex2(new String(entry), blockIdL, columnNr);
+							//addEntriesToIndex2(new String(entry), blockIdL, columnNr);
 						}
 
 						HashMap<Integer, Long> split = block2split.get(blockIdOfFirstBlock);
@@ -70,7 +75,12 @@ public class xIndexUtils {
 
 						xLog.print("Added blocknr " + columnNr.intValue() + " to index");
 						printIndexSize();
-						printIndex2Size();
+						if(nBlocks == 28) {
+							removeIndexEntriesWithMoreThan(14);
+							printIndexSize();
+						}
+
+						//printIndex2Size();
 					}
 					catch (Exception e) {
 						xLog.print(e.toString());
@@ -86,11 +96,31 @@ public class xIndexUtils {
 		indexBuilder.start();
 	}
 
+	public static void removeIndexEntriesWithMoreThan(int i) {
+		int countRemoved = 0;
+		for (Integer attr : index.keySet()){
+			HashMap<String,  ArrayList<Long>> attrIndex = index.get(attr);
+			Iterator<Map.Entry<String,  ArrayList<Long>>> iter = attrIndex.entrySet().iterator();
+			while (iter.hasNext()) {
+				Map.Entry<String,  ArrayList<Long>> entry = iter.next();
+				ArrayList<Long> blockList = attrIndex.get(entry.getValue());
+				if(blockList.size() >= i) {
+					System.out.println("Attr :" + attr + " removed " + entry.getValue());
+					iter.remove();
+					countRemoved++;
+				}
+			}
+			System.out.println("for attr " + attr + " were removed " + countRemoved + " items");
+		}
+	}
+
 	private static void initializeIndexForCurrentColumn(Integer columnNr) {
 		if(!index.containsKey(columnNr)) {
 			HashMap<String,  ArrayList<Long>> currentColumnIndex = new HashMap<String,  ArrayList<Long>>();
 			index.put(columnNr, currentColumnIndex);
 		}
+	}
+	private static void initializeIndex2ForCurrentColumn(Integer columnNr) {
 		if(!index2.containsKey(columnNr)) {
 			HashMap<Long,  ArrayList<String>> currentColumnIndex2 = new HashMap<Long,  ArrayList<String>>();
 			index2.put(columnNr, currentColumnIndex2);
@@ -160,7 +190,7 @@ public class xIndexUtils {
 		xLog.print("xIndexUtils: The row group " + blockId + " is relevant");
 		return 1;
 	}
-	
+
 	public static void printIndex2Size() {
 		System.out.println("[i2] # Attributes: " + index2.size());
 		long startTime = System.currentTimeMillis();
@@ -182,7 +212,7 @@ public class xIndexUtils {
 				for (Long block : attrIndex.keySet()) {
 					ArrayList<String> stringList = attrIndex.get(block);
 					System.out.println("[i2] " + attr + " " + block + ": " +  stringList.size());
-					
+
 					long chars = 0;
 					for (String s : stringList) {
 						chars += s.length();
