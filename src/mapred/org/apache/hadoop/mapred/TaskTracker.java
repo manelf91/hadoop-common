@@ -4633,9 +4633,9 @@ Runnable, TaskTrackerMXBean {
 	}
 
 	@Override
-	public String getIndexSize() {
-		String indexSize = xIndexUtils.getIndexSizeStr();
-		return indexSize;
+	public void getIndexSize() {
+		//String indexSize = xIndexUtils.getIndexSizeStr();
+		return "";
 	}
 
 	@Override
