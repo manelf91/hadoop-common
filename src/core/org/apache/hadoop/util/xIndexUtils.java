@@ -83,7 +83,7 @@ public class xIndexUtils {
 						//printIndex2Size();
 					}
 					catch (Exception e) {
-						xLog.print(e.toString());
+						e.printStackTrace();
 					}
 				}
 			}
@@ -103,9 +103,9 @@ public class xIndexUtils {
 			Iterator<Map.Entry<String,  ArrayList<Long>>> iter = attrIndex.entrySet().iterator();
 			while (iter.hasNext()) {
 				Map.Entry<String,  ArrayList<Long>> entry = iter.next();
-				ArrayList<Long> blockList = attrIndex.get(entry.getValue());
+				ArrayList<Long> blockList = entry.getValue();
 				if(blockList.size() >= i) {
-					System.out.println("Attr :" + attr + " removed " + entry.getValue());
+					System.out.println("Attr :" + attr + " removed " + entry.getKey());
 					iter.remove();
 					countRemoved++;
 				}
