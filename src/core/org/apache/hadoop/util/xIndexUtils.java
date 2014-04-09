@@ -70,11 +70,6 @@ public class xIndexUtils {
 						String entry = "";
 						while((entry = br.readLine()) != null) {
 							String s = new String(entry);
-							if (columnNr == 1) {
-								MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
-								messageDigest.update(s.getBytes());
-								s = new String(messageDigest.digest());
-							}
 							addEntriesToIndex(s, blocknr, columnNr);
 						}
 
