@@ -68,7 +68,6 @@ public class Selection extends Configured implements Tool {
 
 		public void configure(JobConf job) {        
 			String filters = job.get("filtersMapFunction");
-			System.out.println(filters);
 			if (filters != null) {
 
 				String[] filtersByAttr = filters.split(",");
@@ -94,12 +93,9 @@ public class Selection extends Configured implements Tool {
 			while (itr.hasMoreTokens()) {
 				word.set(itr.nextToken());
 
-				System.out.println("word: " + word.toString());
-
 				String[] args = word.toString().split(";");
 
 				for (Map.Entry<Integer,String> entry : filtersMap.entrySet()) {
-					System.out.println("entry: " + entry.toString());
 					int attrNr = entry.getKey().intValue();
 					String filter = entry.getValue();
 
