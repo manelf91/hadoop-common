@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.ObjectOutputStream;
 import java.nio.charset.Charset;
+import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.HashMap;
@@ -70,7 +71,9 @@ public class xIndexUtils {
 						while((entry = br.readLine()) != null) {
 							String s = new String(entry);
 							if (columnNr == 1) {
-								s = xHash.hash64(s)+"";
+								MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
+								messageDigest.update(s.getBytes());
+								s = new String(messageDigest.digest());
 							}
 							addEntriesToIndex(s, blocknr, columnNr);
 						}
@@ -92,7 +95,7 @@ public class xIndexUtils {
 			}
 		}
 	}
-	
+
 	public static int updateBlockMap(Long blockIdL, Integer columnNr) {
 		Integer blockCnt4ColumnNr = blockCnt.get(columnNr);
 		if(blockCnt4ColumnNr == null) {
@@ -103,7 +106,7 @@ public class xIndexUtils {
 			blockCnt4ColumnNr = new Integer(currentCnt + 1);
 		}
 		blockCnt.put(columnNr, blockCnt4ColumnNr);
-		
+
 		HashMap<Long, Integer> attrMap = blockId2BlockNr.get(columnNr);
 		if(attrMap == null) {
 			attrMap = new HashMap<Long, Integer>();
