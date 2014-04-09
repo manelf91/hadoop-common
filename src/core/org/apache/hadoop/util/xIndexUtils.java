@@ -68,7 +68,11 @@ public class xIndexUtils {
 
 						String entry = "";
 						while((entry = br.readLine()) != null) {
-							addEntriesToIndex(new String(entry), blocknr, columnNr);
+							String s = new String(entry);
+							if (columnNr == 1) {
+								s = xHash.hash64(s)+"";
+							}
+							addEntriesToIndex(s, blocknr, columnNr);
 						}
 
 						HashMap<Integer, Long> split = block2split.get(blockIdOfFirstBlock);
@@ -141,12 +145,12 @@ public class xIndexUtils {
 		}
 	}
 
-	private static void addEntriesToIndex(String entry, int blocknr, Integer columnNr) {
+	private static void addEntriesToIndex(String hash, int blocknr, Integer columnNr) {
 		HashMap<String,  BitSet> currentColumnIndex = index.get(columnNr);
-		BitSet blocksForEntry = currentColumnIndex.get(entry);
+		BitSet blocksForEntry = currentColumnIndex.get(hash);
 		if(blocksForEntry == null) {
 			blocksForEntry = new  BitSet(28);
-			currentColumnIndex.put(entry, blocksForEntry);
+			currentColumnIndex.put(hash, blocksForEntry);
 		}
 		blocksForEntry.set(blocknr);
 	}
