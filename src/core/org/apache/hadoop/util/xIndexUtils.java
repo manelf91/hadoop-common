@@ -10,6 +10,7 @@ import java.io.InputStreamReader;
 import java.io.ObjectOutputStream;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -23,13 +24,12 @@ public class xIndexUtils {
 
 	private static Long blockIdOfFirstBlock;
 	// <attribute nr, <attribute value, blockId>>
-	public final static HashMap<Integer, HashMap<String, ArrayList<Long>>> index = new HashMap<Integer, HashMap<String,  ArrayList<Long>>>();
-
-	public final static HashMap<Integer, HashMap<Long, ArrayList<String>>> index2 = new HashMap<Integer, HashMap<Long, ArrayList<String>>>();
-
+	public final static HashMap<Integer, HashMap<String, BitSet>> index = new HashMap<Integer, HashMap<String,  BitSet>>();
 
 	//first block of split N -> first block of split N, second block of split N, third block of split N... 
 	private static HashMap<Long, HashMap<Integer, Long>> block2split = new HashMap<Long,  HashMap<Integer, Long>>();
+	private static HashMap<Integer, HashMap<Long, Integer>> blockId2BlockNr = new HashMap<Integer, HashMap<Long, Integer>>();
+	private static HashMap<Integer, Integer> blockCnt = new HashMap<Integer, Integer>();
 
 	public static BlockingQueue<xBlockQueueItem> queue = new LinkedBlockingQueue<xBlockQueueItem>(200);
 	static Thread indexBuilder = null;
@@ -50,7 +50,9 @@ public class xIndexUtils {
 						Long blockIdL = new Long(blockId);
 						boolean first = item.first;
 						Integer columnNr = new Integer(item.columnNr);
-						xLog.print("Going to add blocknr " + columnNr.intValue() + " to index");
+						xLog.print("Going to add columnNr " + columnNr.intValue() + " to index");
+
+						int blocknr = updateBlockMap(blockIdL, columnNr);
 
 						ByteArrayOutputStream decompressedData = decompressData(compressedData);
 
@@ -66,21 +68,18 @@ public class xIndexUtils {
 
 						String entry = "";
 						while((entry = br.readLine()) != null) {
-							addEntriesToIndex(new String(entry), blockIdL, columnNr);
-							//addEntriesToIndex2(new String(entry), blockIdL, columnNr);
+							addEntriesToIndex(new String(entry), blocknr, columnNr);
 						}
 
 						HashMap<Integer, Long> split = block2split.get(blockIdOfFirstBlock);
 						split.put(columnNr, blockIdL);
 
-						xLog.print("Added blocknr " + columnNr.intValue() + " to index");
+						xLog.print("Added columnNr " + columnNr.intValue() + " to index");
 						if(nBlocks == 28 && columnNr.intValue() == 1) {
 							//printIndexSize();
 							//removeIndexEntriesWithMoreThan(14);
 							printIndexSize();
 						}
-
-						//printIndex2Size();
 					}
 					catch (Exception e) {
 						e.printStackTrace();
@@ -89,6 +88,26 @@ public class xIndexUtils {
 			}
 		}
 	}
+	
+	public static int updateBlockMap(Long blockIdL, Integer columnNr) {
+		Integer blockCnt4ColumnNr = blockCnt.get(columnNr);
+		if(blockCnt4ColumnNr == null) {
+			blockCnt4ColumnNr = new Integer(0);
+		}
+		else {
+			int currentCnt = blockCnt4ColumnNr.intValue();
+			blockCnt4ColumnNr = new Integer(currentCnt + 1);
+		}
+		blockCnt.put(columnNr, blockCnt4ColumnNr);
+		
+		HashMap<Long, Integer> attrMap = blockId2BlockNr.get(columnNr);
+		if(attrMap == null) {
+			attrMap = new HashMap<Long, Integer>();
+			blockId2BlockNr.put(columnNr, attrMap);
+		}
+		attrMap.put(blockIdL, blockCnt4ColumnNr);
+		return blockCnt4ColumnNr.intValue();
+	}
 
 	public static void initializeIndexBuilderThread() {
 		xLog.print("xIndexUtils: Start running IndexBuilderThread\n");
@@ -96,7 +115,7 @@ public class xIndexUtils {
 		indexBuilder.start();
 	}
 
-	public static void removeIndexEntriesWithMoreThan(int i) {
+	/*public static void removeIndexEntriesWithMoreThan(int i) {
 		int countRemoved = 0;
 		for (Integer attr : index.keySet()){
 			HashMap<String,  ArrayList<Long>> attrIndex = index.get(attr);
@@ -113,38 +132,23 @@ public class xIndexUtils {
 			System.out.println("for attr " + attr + " were removed " + countRemoved + " items");
 			countRemoved = 0;
 		}
-	}
+	}*/
 
 	private static void initializeIndexForCurrentColumn(Integer columnNr) {
 		if(!index.containsKey(columnNr)) {
-			HashMap<String,  ArrayList<Long>> currentColumnIndex = new HashMap<String,  ArrayList<Long>>();
+			HashMap<String,  BitSet> currentColumnIndex = new HashMap<String,  BitSet>();
 			index.put(columnNr, currentColumnIndex);
 		}
 	}
-	private static void initializeIndex2ForCurrentColumn(Integer columnNr) {
-		if(!index2.containsKey(columnNr)) {
-			HashMap<Long,  ArrayList<String>> currentColumnIndex2 = new HashMap<Long,  ArrayList<String>>();
-			index2.put(columnNr, currentColumnIndex2);
-		}
-	}
 
-	private static void addEntriesToIndex(String entry, Long blockId, Integer columnNr) {
-		HashMap<String,  ArrayList<Long>> currentColumnIndex = index.get(columnNr);
-		ArrayList<Long> blocksForEntry = currentColumnIndex.get(entry);
+	private static void addEntriesToIndex(String entry, int blocknr, Integer columnNr) {
+		HashMap<String,  BitSet> currentColumnIndex = index.get(columnNr);
+		BitSet blocksForEntry = currentColumnIndex.get(entry);
 		if(blocksForEntry == null) {
-			blocksForEntry = new  ArrayList<Long>();
+			blocksForEntry = new  BitSet(28);
 			currentColumnIndex.put(entry, blocksForEntry);
 		}
-		blocksForEntry.add(blockId);
-	}
-	private static void addEntriesToIndex2(String entry, Long blockIdL, Integer columnNr) {
-		HashMap<Long, ArrayList<String>> currentColumnIndex2 = index2.get(columnNr);
-		ArrayList<String> blocksForEntry2 = currentColumnIndex2.get(blockIdL);
-		if(blocksForEntry2 == null) {
-			blocksForEntry2 = new  ArrayList<String>();
-			currentColumnIndex2.put(blockIdL, blocksForEntry2);
-		}
-		blocksForEntry2.add(entry);
+		blocksForEntry.set(blocknr);
 	}
 
 	public static ByteArrayOutputStream decompressData(ByteArrayOutputStream compressedData) throws IOException {
@@ -180,60 +184,17 @@ public class xIndexUtils {
 		for(Integer attrNr : filters.keySet()) {
 			String predicate = filters.get(attrNr);
 			Long blockIdOfAttrNr = split.get(attrNr);
+			Integer blocknr = blockId2BlockNr.get(attrNr).get(blockIdOfAttrNr);
 
-			ArrayList<Long> relevantBlocks = index.get(attrNr).get(predicate);
+			BitSet relevantBlocks = index.get(attrNr).get(predicate);
 
-			if((relevantBlocks == null) || (!relevantBlocks.contains(blockIdOfAttrNr))) {
+			if((relevantBlocks == null) || (relevantBlocks.get(blocknr.intValue()) == false )) {
 				xLog.print("xIndexUtils: The row group " + blockId + " is irrelevant");
 				return -1;
 			}
 		}
 		xLog.print("xIndexUtils: The row group " + blockId + " is relevant");
 		return 1;
-	}
-
-	public static void printIndex2Size() {
-		System.out.println("[i2] # Attributes: " + index2.size());
-		long startTime = System.currentTimeMillis();
-		FileOutputStream fout;
-		DataOutputStream dos;
-		ObjectOutputStream oos;
-		try {
-			fout = new FileOutputStream("index.obj");
-			dos = new DataOutputStream(fout);
-			oos = new ObjectOutputStream(dos);
-			oos.writeObject(index2);
-			oos.flush();
-			oos.close();
-			System.out.println("[i2] total size: " + dos.size() + " bytes");
-
-			for (Integer attr : index2.keySet()){
-				HashMap<Long,  ArrayList<String>> attrIndex = index2.get(attr);
-				System.out.println("[i2] attribute " + attr.intValue() + " has " + attrIndex.size() + " entries");
-				for (Long block : attrIndex.keySet()) {
-					ArrayList<String> stringList = attrIndex.get(block);
-					System.out.println("[i2] " + attr + " " + block + ": " +  stringList.size());
-
-					long chars = 0;
-					for (String s : stringList) {
-						chars += s.length();
-						System.out.println("[i2] !!!" + attr + " " + block + ": " + s + "!!!");
-					}
-					System.out.println("[i2] chars: " + chars);
-				}
-				fout = new FileOutputStream("index.obj");
-				dos = new DataOutputStream(fout);
-				oos = new ObjectOutputStream(dos);
-				oos.writeObject(attrIndex);
-				oos.flush();
-				oos.close();
-				System.out.println("[i2] attribute " + attr.intValue() + " = " + dos.size() + " bytes");
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		long end = System.currentTimeMillis();
-		System.out.println("[i2] time to measure index size: " + (end-startTime) + "milliseconds");
 	}
 
 	public static void printIndexSize() {
@@ -252,7 +213,7 @@ public class xIndexUtils {
 			System.out.println("[i1] total size: " + dos.size() + " bytes");
 
 			for (Integer attr : index.keySet()){
-				HashMap<String,  ArrayList<Long>> attrIndex = index.get(attr);
+				HashMap<String,  BitSet> attrIndex = index.get(attr);
 				System.out.println("[i1] attribute " + attr.intValue() + " has " + attrIndex.size() + " entries");
 				int i = 0;
 				/*for (String entry : attrIndex.keySet()) {
