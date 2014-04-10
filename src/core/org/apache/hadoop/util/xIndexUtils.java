@@ -79,11 +79,9 @@ public class xIndexUtils {
 							int lengthAfter = hashedNewEntry.length();
 
 							if(lengthBefore > lengthAfter) {
-								System.out.println(newEntry + " hashed!: " + hashedNewEntry);
 								addEntriesToIndex(hashedNewEntry, blocknr, columnNr);
 							}
 							else {
-								System.out.println(newEntry + " not hashed!");
 								addEntriesToIndex(newEntry, blocknr, columnNr);
 							}
 						}
