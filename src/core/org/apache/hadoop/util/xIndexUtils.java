@@ -8,6 +8,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.ObjectOutputStream;
+import java.math.BigInteger;
 import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.util.ArrayList;
@@ -69,8 +70,22 @@ public class xIndexUtils {
 
 						String entry = "";
 						while((entry = br.readLine()) != null) {
-							String s = new String(entry);
-							addEntriesToIndex(s, blocknr, columnNr);
+							String newEntry = new String(entry.getBytes(), "UTF-8");
+							int lengthBefore = newEntry.length();
+
+							MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
+							byte[] hash = messageDigest.digest(newEntry.getBytes("UTF-8"));
+					        String hashedNewEntry = new String(hash, "UTF-8");
+							int lengthAfter = hashedNewEntry.length();
+
+							if(lengthBefore > lengthAfter) {
+								System.out.println(newEntry + " hashed!: " + hashedNewEntry);
+								addEntriesToIndex(hashedNewEntry, blocknr, columnNr);
+							}
+							else {
+								System.out.println(newEntry + " not hashed!");
+								addEntriesToIndex(newEntry, blocknr, columnNr);
+							}
 						}
 
 						HashMap<Integer, Long> split = block2split.get(blockIdOfFirstBlock);
