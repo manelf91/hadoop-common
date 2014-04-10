@@ -70,13 +70,14 @@ public class xIndexUtils {
 
 						String entry = "";
 						while((entry = br.readLine()) != null) {
-							String newEntry = new String(entry.getBytes(), "UTF-8");
-							int lengthBefore = newEntry.length();
+							String charset = "UTF-8";
+							String newEntry = new String(entry.getBytes(), charset);
+							int lengthBefore = newEntry.getBytes(charset).length;
 
 							MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
-							byte[] hash = messageDigest.digest(newEntry.getBytes("UTF-8"));
-					        String hashedNewEntry = new String(hash, "UTF-8");
-							int lengthAfter = hashedNewEntry.length();
+							byte[] hash = messageDigest.digest(newEntry.getBytes(charset));
+					        String hashedNewEntry = new String(hash, charset);
+							int lengthAfter = hashedNewEntry.getBytes(charset).length;
 
 							if(lengthBefore > lengthAfter) {
 								addEntriesToIndex(hashedNewEntry, blocknr, columnNr);
