@@ -75,7 +75,7 @@ public class xIndexUtils {
 						while((entry = br.readLine()) != null) {
 							String charset = "UTF-8";
 							String newEntry = new String(entry.getBytes(), charset);
-							int lengthBefore = newEntry.getBytes(charset).length;
+							/*int lengthBefore = newEntry.getBytes(charset).length;
 
 							MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
 							byte[] hash = messageDigest.digest(newEntry.getBytes(charset));
@@ -87,7 +87,9 @@ public class xIndexUtils {
 							}
 							else {
 								addEntriesToIndex(newEntry, blocknr, columnNr);
-							}
+							}*/
+
+							addEntriesToIndex(newEntry, blocknr, columnNr);
 						}
 
 						HashMap<Integer, Long> split = block2split.get(blockIdOfFirstBlock);
