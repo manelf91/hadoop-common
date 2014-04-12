@@ -51,6 +51,7 @@ public class LineReader {
 	// The line delimiter
 	private final byte[] recordDelimiterBytes;
 	public static boolean remoteReadAppBlock = false;
+	public static Configuration conf;
 
 
 	/**

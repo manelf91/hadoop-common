@@ -1846,6 +1846,9 @@ public class DFSClient implements FSConstants, java.io.Closeable {
       out.write(protocol);
       if (protocol == DataTransferProtocol.OP_READ_APPBLOCK) {
     	  Text.writeString(out, filters);
+    	  HashMap<Integer, String> map = xIndexUtils.buildFiltersMap(LineReader.conf);
+    	  ObjectOutputStream objOut = new ObjectOutputStream(out);
+          objOut.writeObject(map);
       }
       out.writeLong( blockId );
       out.writeLong( genStamp );

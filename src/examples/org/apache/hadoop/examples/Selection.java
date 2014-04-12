@@ -18,6 +18,8 @@
 
 package org.apache.hadoop.mapred;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -25,6 +27,8 @@ import java.util.List;
 import java.util.StringTokenizer;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
@@ -67,15 +71,18 @@ public class Selection extends Configured implements Tool {
 		private static HashMap<Integer, String> filtersMap = new HashMap<Integer, String>();
 
 		public void configure(JobConf job) {        
-			String filters = job.get("filtersMapFunction");
+			String filters = job.get("filteredAttrs");
 			if (filters != null) {
 
 				String[] filtersByAttr = filters.split(",");
 
-				for (String filterAttr : filtersByAttr) {
-					String[] attrNrAndFilter = filterAttr.split("-");
-					int attrNr = Integer.parseInt(attrNrAndFilter[0]);
-					String filter = attrNrAndFilter[1];
+				for (String filteredAttr : filtersByAttr) {
+					String body = job.get("filter" + filteredAttr);
+
+					int attrNr = Integer.parseInt(body.substring(0, body.indexOf(" ")));
+					String filter = body.substring(body.indexOf(" ")+1);
+
+					System.out.println(attrNr+": " + filter);
 
 					filtersMap.put(new Integer(attrNr), filter);
 				}
@@ -98,6 +105,7 @@ public class Selection extends Configured implements Tool {
 				for (Map.Entry<Integer,String> entry : filtersMap.entrySet()) {
 					int attrNr = entry.getKey().intValue();
 					String filter = entry.getValue();
+					System.out.println("entry:" + args[attrNr]);
 
 					if (!args[attrNr].equals(filter)) {
 						return;
@@ -162,12 +170,37 @@ public class Selection extends Configured implements Tool {
 		}
 
 		String relevantAttrs = "";
-		String filters = "";
-		String filtersForMapFunction = "";
+		String filteredAttrs = "";
 
-		String[] filtersANDrelevantAttrs = args[3].split(",");
+		BufferedReader br = new BufferedReader(new FileReader(args[3]));
+		String pred;
 		int n = 0;
-		for (String s : filtersANDrelevantAttrs) {
+		while ((pred = br.readLine()) != null) {
+			String absAttr = "";
+			if(!pred.contains(" ")){
+				absAttr = pred;
+			}
+			else {
+				int indexOfFirstSpace = pred.indexOf(" ");
+				int indexOfSecondSpace = pred.indexOf(" ",indexOfFirstSpace+1);
+
+				absAttr = new String(pred.substring(0, indexOfFirstSpace));
+				String relAttr = new String(pred.substring(indexOfFirstSpace+1, indexOfSecondSpace));
+				filteredAttrs += relAttr + ",";
+				String filter = new String(pred.substring(indexOfSecondSpace+1));
+				System.out.println("filter" + relAttr +": " + n + " " + filter);
+				conf.setIfUnset("filter" + relAttr, n + " " + filter);
+			}
+			relevantAttrs += absAttr + ",";
+			n++;
+		}
+		br.close();
+
+		System.out.println("relevantAttrs: " + relevantAttrs);
+		System.out.println("filteredAttrs: " + filteredAttrs);
+		
+		/*for (String s : filtersANDrelevantAttrs) {
+			System.out.println(s);
 			String absAttr = "";
 			if(s.contains("=")) {
 				absAttr = s.split("=")[0];
@@ -180,11 +213,10 @@ public class Selection extends Configured implements Tool {
 			}
 			relevantAttrs += absAttr + ":";
 			n++;
-		}
+		}*/
 		conf.setIfUnset("relevantAttrs", relevantAttrs);
-		conf.setIfUnset("filtersMapFunction", filtersForMapFunction);
-		if (!filters.equals("")) {
-			conf.setIfUnset("filters", filters);
+		if (!filteredAttrs.equals("")) {
+			conf.setIfUnset("filteredAttrs", filteredAttrs);
 		}
 
 

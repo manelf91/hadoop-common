@@ -21,9 +21,11 @@ import static org.apache.hadoop.hdfs.server.datanode.DataNode.DN_CLIENTTRACE_FOR
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -261,11 +263,19 @@ class DataXceiver implements Runnable, FSConstants {
 
 		/*mgferreira*/
 		String filters = Text.readString(in);
-
+		ObjectInputStream objIn = new ObjectInputStream(in);
+		HashMap<Integer, String> filtersMap = null;
+		try {
+			filtersMap = (HashMap<Integer, String>) objIn.readObject();
+			System.out.println(filtersMap.toString());
+		} catch (ClassNotFoundException e1) {
+			e1.printStackTrace();
+		}
+		
 		long blockId = in.readLong();
 
 		//aceder ao indice
-		Block block = new Block( blockId, 0 , in.readLong());
+		Block block = new Block(blockId, 0 , in.readLong());
 
 		long startOffset = in.readLong();
 		long length = in.readLong();
@@ -312,7 +322,7 @@ class DataXceiver implements Runnable, FSConstants {
 
 					/*mgferreira*/
 					byte protocol = 0;
-					HashMap<Integer, String> filtersMap = xIndexUtils.buildFiltersMap(filters);
+					//HashMap<Integer, String> filtersMap = xIndexUtils.buildFiltersMap(filters);
 					xLog.print("DataXceiver: A datanode has requested the row group " + blockId);
 
 					if (xIndexUtils.checkIfRelevantRowGroup(filtersMap, blockId) == -1) {

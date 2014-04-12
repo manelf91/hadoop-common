@@ -29,6 +29,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.util.DiskChecker.DiskErrorException;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocalDirAllocator;
 import org.apache.hadoop.fs.Path;
@@ -133,7 +134,7 @@ public class IsolationRunner {
     }
 
 	@Override
-	public int checkIfRelevantRowGroup(long blockId, String filters) {
+	public int checkIfRelevantRowGroup(long blockId, Configuration filters) {
 		// TODO Auto-generated method stub
 		return 0;
 	}

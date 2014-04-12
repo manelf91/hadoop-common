@@ -94,7 +94,7 @@ public class xRecordReader implements RecordReader<LongWritable, Text> {
 
 	private void openRowGroup() throws IOException {
 		long currentBlockId = split.getBlocksIds().get(currentRowGroupIndex);
-		relevantBlock = MapTask.relevantRowGroup(currentBlockId);
+		relevantBlock = MapTask.relevantRowGroup(currentBlockId, job);
 		array2inputStreams.clear();
 		inN.clear();
 		posN.clear();
@@ -102,6 +102,7 @@ public class xRecordReader implements RecordReader<LongWritable, Text> {
 		xLog.print("xRecordReader: block " + currentBlockId + " relevance: " + relevantBlock);
 		if(relevantBlock == 0){
 			org.apache.hadoop.util.LineReader.remoteReadAppBlock = true;
+			org.apache.hadoop.util.LineReader.conf = job;
 		}
 		else {
 			org.apache.hadoop.util.LineReader.remoteReadAppBlock = false;
@@ -182,7 +183,7 @@ public class xRecordReader implements RecordReader<LongWritable, Text> {
 		ArrayList<Path> paths = new ArrayList<Path>();
 
 		String relevantAttrsS = job.get("relevantAttrs");
-		String[] relevantAttrs = relevantAttrsS.split(":");
+		String[] relevantAttrs = relevantAttrsS.split(",");
 
 		for(String relevantAttr : relevantAttrs) {
 			Path filePath = file.getParent();

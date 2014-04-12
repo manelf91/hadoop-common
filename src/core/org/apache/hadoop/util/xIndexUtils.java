@@ -18,9 +18,12 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 
 import org.apache.commons.collections.primitives.ArrayLongList;
+import org.apache.hadoop.conf.Configuration;
 
 public class xIndexUtils {
 
@@ -76,7 +79,7 @@ public class xIndexUtils {
 
 							MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
 							byte[] hash = messageDigest.digest(newEntry.getBytes(charset));
-					        String hashedNewEntry = new String(hash, charset);
+							String hashedNewEntry = new String(hash, charset);
 							int lengthAfter = hashedNewEntry.getBytes(charset).length;
 
 							if(lengthBefore > lengthAfter) {
@@ -253,15 +256,23 @@ public class xIndexUtils {
 		System.out.println("[i1] time to measure index size: " + (end-startTime) + "milliseconds");
 	}
 
-	public static HashMap<Integer, String> buildFiltersMap(String filters) {
+	public static HashMap<Integer, String> buildFiltersMap(Configuration job) {
 		HashMap<Integer, String> filtersMap = new HashMap<Integer, String>();
-		// <attribute number #>-<predicate>;<attribute number #>-<predicate>...
-		if(filters != null) {
-			String[] filtersArr = filters.split(",");
-			for (String filter : filtersArr) {
-				Integer attrNr = Integer.parseInt(filter.split("-")[0]);
-				String attrValue = filter.split("-")[1];
-				filtersMap.put(attrNr, attrValue);
+
+		String filters = job.get("filteredAttrs");
+		if (filters != null) {
+
+			String[] filtersByAttr = filters.split(",");
+
+			for (String filteredAttr : filtersByAttr) {
+				String body = job.get("filter" + filteredAttr);
+
+				int attrNr = Integer.parseInt(body.substring(0, body.indexOf(" ")));
+				String filter = body.substring(body.indexOf(" ")+1);
+
+				System.out.println(attrNr+": " + filter);
+
+				filtersMap.put(new Integer(attrNr), filter);
 			}
 		}
 		return filtersMap;

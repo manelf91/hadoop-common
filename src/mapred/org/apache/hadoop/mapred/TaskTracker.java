@@ -4627,8 +4627,8 @@ Runnable, TaskTrackerMXBean {
 
 	/*mgferreira*/
 	@Override
-	public int checkIfRelevantRowGroup(long blockId, String filters) {
-		HashMap<Integer, String> filtersMap = xIndexUtils.buildFiltersMap(filters);
+	public int checkIfRelevantRowGroup(long blockId, Configuration job) {
+		HashMap<Integer, String> filtersMap = xIndexUtils.buildFiltersMap(job);
 		return xIndexUtils.checkIfRelevantRowGroup(filtersMap, blockId);
 	}
 

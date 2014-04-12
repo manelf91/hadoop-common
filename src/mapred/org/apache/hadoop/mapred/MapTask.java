@@ -73,6 +73,7 @@ import org.apache.hadoop.util.Progress;
 import org.apache.hadoop.util.QuickSort;
 import org.apache.hadoop.util.ReflectionUtils;
 import org.apache.hadoop.util.StringUtils;
+import org.apache.hadoop.util.xLog;
 
 /** A Map task. */
 public class MapTask extends Task {
@@ -428,7 +429,7 @@ public class MapTask extends Task {
 		reporter.setInputSplit(inputSplit);
 
 		/*mgferreira*/		
-		DFSClient.filters = conf.get("filters");
+		DFSClient.filters = conf.get("filteredAttrs");
 		umbilicalAux = umbilical;
 
 		RecordReader<INKEY,INVALUE> in = isSkipping() ? 
@@ -1821,12 +1822,12 @@ public class MapTask extends Task {
 		}
 	}
 
-	public static int relevantRowGroup(long blockId) {
+	public static int relevantRowGroup(long blockId, Configuration job) {
 		if (DFSClient.filters == null) {
 			return 1;
 		}
-		System.out.println("Map Task. ver se o bloco " + blockId + " e' relevante...");
-		return umbilicalAux.checkIfRelevantRowGroup(blockId, DFSClient.filters);
+		xLog.print("Map Task: Going to check if block " + blockId + " is relevant...");
+		return umbilicalAux.checkIfRelevantRowGroup(blockId, job);
 	}
 
 }

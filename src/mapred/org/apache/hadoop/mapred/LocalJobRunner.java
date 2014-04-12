@@ -38,6 +38,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.filecache.DistributedCache;
 import org.apache.hadoop.filecache.TaskDistributedCacheManager;
 import org.apache.hadoop.filecache.TrackerDistributedCacheManager;
@@ -567,11 +568,10 @@ public class LocalJobRunner implements JobSubmissionProtocol {
     }
 
 	@Override
-	public int checkIfRelevantRowGroup(long blockId, String filters) {
+	public int checkIfRelevantRowGroup(long blockId, Configuration filters) {
 		// TODO Auto-generated method stub
 		return 0;
 	}
-    
   }
 
   public LocalJobRunner(JobConf conf) throws IOException {
