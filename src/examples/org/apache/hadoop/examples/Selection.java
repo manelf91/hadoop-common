@@ -105,7 +105,6 @@ public class Selection extends Configured implements Tool {
 				for (Map.Entry<Integer,String> entry : filtersMap.entrySet()) {
 					int attrNr = entry.getKey().intValue();
 					String filter = entry.getValue();
-					System.out.println("entry:" + args[attrNr]);
 
 					if (!args[attrNr].equals(filter)) {
 						return;
