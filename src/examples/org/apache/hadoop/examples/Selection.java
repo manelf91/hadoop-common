@@ -99,14 +99,16 @@ public class Selection extends Configured implements Tool {
 				word.set(itr.nextToken());
 
 				String[] args = word.toString().split(";;;");
-
 				for (Map.Entry<Integer,String> entry : filtersMap.entrySet()) {
 					int attrNr = entry.getKey().intValue();
 					String filter = entry.getValue();
-
+					System.out.println("ainda nao: " + args[attrNr]);
+						
 					if (!args[attrNr].equals(filter)) {
 						return;
 					}
+
+					System.out.println("passou: " + args[attrNr]);
 				}
 				output.collect(word, one);
 			}
