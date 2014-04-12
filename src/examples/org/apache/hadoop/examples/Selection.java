@@ -82,8 +82,6 @@ public class Selection extends Configured implements Tool {
 					int attrNr = Integer.parseInt(body.substring(0, body.indexOf(" ")));
 					String filter = body.substring(body.indexOf(" ")+1);
 
-					System.out.println(attrNr+": " + filter);
-
 					filtersMap.put(new Integer(attrNr), filter);
 				}
 			}
@@ -100,7 +98,7 @@ public class Selection extends Configured implements Tool {
 			while (itr.hasMoreTokens()) {
 				word.set(itr.nextToken());
 
-				String[] args = word.toString().split(";");
+				String[] args = word.toString().split(";;;");
 
 				for (Map.Entry<Integer,String> entry : filtersMap.entrySet()) {
 					int attrNr = entry.getKey().intValue();
