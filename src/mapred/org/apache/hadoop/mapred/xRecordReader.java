@@ -257,7 +257,7 @@ public class xRecordReader implements RecordReader<LongWritable, Text> {
 				key.set(pos);
 
 				int newSize = in.readLine(value, maxLineLength, Math.max(maxBytesToConsume(pos), maxLineLength));
-				Text accumulator = new Text(value.toString()+ ";;;");
+				Text accumulator = new Text(value.toString());
 				
 				if (newSize == 0) {
 					break;
@@ -267,7 +267,7 @@ public class xRecordReader implements RecordReader<LongWritable, Text> {
 					Text newValue = new Text();
 					long pos = posN.get(0);
 					newSize = in.readLine(newValue, maxLineLength, Math.max(maxBytesToConsume(pos), maxLineLength));
-					accumulator.set(accumulator.toString() + newValue.toString() + ";;;");
+					accumulator.set(accumulator.toString() + ";" + newValue.toString());
 
 					if (newSize != 0) {
 						pos += newSize;

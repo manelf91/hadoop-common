@@ -100,7 +100,7 @@ public class Selection extends Configured implements Tool {
 			while (itr.hasMoreTokens()) {
 				word.set(itr.nextToken());
 
-				String[] args = word.toString().split(";;;");
+				String[] args = word.toString().split(";");
 
 				for (Map.Entry<Integer,String> entry : filtersMap.entrySet()) {
 					int attrNr = entry.getKey().intValue();
