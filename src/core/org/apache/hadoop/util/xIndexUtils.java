@@ -73,8 +73,7 @@ public class xIndexUtils {
 
 						String entry = "";
 						while((entry = br.readLine()) != null) {
-							String charset = "UTF-8";
-							String newEntry = new String(entry.getBytes(), charset);
+							String newEntry = new String(entry);
 							/*int lengthBefore = newEntry.getBytes(charset).length;
 
 							MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
