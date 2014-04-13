@@ -268,13 +268,11 @@ public class xIndexUtils {
 
 			for (String filteredAttr : filtersByAttr) {
 				String body = job.get("filter" + filteredAttr);
-
-				int attrNr = Integer.parseInt(body.substring(0, body.indexOf(" ")));
 				String filter = body.substring(body.indexOf(" ")+1);
 
-				System.out.println(attrNr+": " + filter);
+				System.out.println(filteredAttr+": " + filter);
 
-				filtersMap.put(new Integer(attrNr), filter);
+				filtersMap.put(new Integer(filteredAttr), filter);
 			}
 		}
 		return filtersMap;
