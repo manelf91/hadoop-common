@@ -103,6 +103,7 @@ public class xRecordReader implements RecordReader<LongWritable, Text> {
 		if(relevantBlock == 0){
 			org.apache.hadoop.util.LineReader.remoteReadAppBlock = true;
 			org.apache.hadoop.util.LineReader.conf = job;
+			org.apache.hadoop.util.LineReader.firstBlock = currentBlockId;
 		}
 		else {
 			org.apache.hadoop.util.LineReader.remoteReadAppBlock = false;

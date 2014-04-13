@@ -1837,7 +1837,7 @@ public class DFSClient implements FSConstants, java.io.Closeable {
      
       /*mgferreira*/
       byte protocol = DataTransferProtocol.OP_READ_BLOCK;
-      if (LineReader.remoteReadAppBlock && file.contains(firstColumnId)) {
+      if (LineReader.remoteReadAppBlock) {
     	  protocol = DataTransferProtocol.OP_READ_APPBLOCK;
     	  xLog.print("DFSClient: Going to read the row group " + blockId + " from another datanode");
       }
@@ -1845,7 +1845,7 @@ public class DFSClient implements FSConstants, java.io.Closeable {
       out.writeShort( DataTransferProtocol.DATA_TRANSFER_VERSION );
       out.write(protocol);
       if (protocol == DataTransferProtocol.OP_READ_APPBLOCK) {
-    	  Text.writeString(out, filters);
+          out.writeLong( LineReader.firstBlock );
     	  HashMap<Integer, String> map = xIndexUtils.buildFiltersMap(LineReader.conf);
     	  ObjectOutputStream objOut = new ObjectOutputStream(out);
           objOut.writeObject(map);

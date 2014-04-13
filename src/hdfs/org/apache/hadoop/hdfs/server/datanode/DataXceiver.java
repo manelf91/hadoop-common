@@ -262,7 +262,7 @@ class DataXceiver implements Runnable, FSConstants {
 		//
 
 		/*mgferreira*/
-		String filters = Text.readString(in);
+		long firstBlockId = in.readLong();
 		ObjectInputStream objIn = new ObjectInputStream(in);
 		HashMap<Integer, String> filtersMap = null;
 		try {
@@ -323,10 +323,10 @@ class DataXceiver implements Runnable, FSConstants {
 					/*mgferreira*/
 					byte protocol = 0;
 					//HashMap<Integer, String> filtersMap = xIndexUtils.buildFiltersMap(filters);
-					xLog.print("DataXceiver: A datanode has requested the row group " + blockId);
+					xLog.print("DataXceiver: A datanode has requested the row group " + firstBlockId);
 
-					if (xIndexUtils.checkIfRelevantRowGroup(filtersMap, blockId) == -1) {
-						xLog.print("DataXceiver: The requested the row group " + blockId + " is irrelevant");
+					if (xIndexUtils.checkIfRelevantRowGroup(filtersMap, firstBlockId) == -1) {
+						xLog.print("DataXceiver: The requested the row group " + firstBlockId + " is irrelevant");
 						protocol = DataTransferProtocol.OP_READ_IRRELEVANT_APPBLOCK;
 						out.writeShort(protocol); // send op status
 						out.flush();
@@ -334,7 +334,7 @@ class DataXceiver implements Runnable, FSConstants {
 						IOUtils.closeStream(blockSender);
 						return;
 					}
-					xLog.print("DataXceiver: The requested row group " + blockId + " is relevant");
+					xLog.print("DataXceiver: The requested row group " + firstBlockId + " is relevant");
 					protocol = DataTransferProtocol.OP_STATUS_SUCCESS;
 					out.writeShort(protocol); // send op status
 
