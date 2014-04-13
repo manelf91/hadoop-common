@@ -94,21 +94,19 @@ public class Selection extends Configured implements Tool {
 				OutputCollector<Text, IntWritable> output, 
 				Reporter reporter) throws IOException {
 			String line = value.toString();
-			StringTokenizer itr = new StringTokenizer(line);
-			while (itr.hasMoreTokens()) {
-				word.set(itr.nextToken());
 
-				String[] args = word.toString().split(";;;");
-				for (Map.Entry<Integer,String> entry : filtersMap.entrySet()) {
-					int attrNr = entry.getKey().intValue();
-					String filter = entry.getValue();
-						
-					if (!args[attrNr].equals(filter)) {
-						return;
-					}
+			word.set(line);
+
+			String[] args = word.toString().split(";;;");
+			for (Map.Entry<Integer,String> entry : filtersMap.entrySet()) {
+				int attrNr = entry.getKey().intValue();
+				String filter = entry.getValue();
+
+				if (!args[attrNr].equals(filter)) {
+					return;
 				}
-				output.collect(word, one);
 			}
+			output.collect(word, one);
 		}
 	}
 
@@ -194,7 +192,7 @@ public class Selection extends Configured implements Tool {
 
 		System.out.println("relevantAttrs: " + relevantAttrs);
 		System.out.println("filteredAttrs: " + filteredAttrs);
-		
+
 		/*for (String s : filtersANDrelevantAttrs) {
 			System.out.println(s);
 			String absAttr = "";
