@@ -74,7 +74,8 @@ public class xIndexUtils {
 						String entry = "";
 						while((entry = br.readLine()) != null) {
 							String newEntry = new String(entry);
-							/*int lengthBefore = newEntry.getBytes(charset).length;
+							String charset = "UTF-8";
+							int lengthBefore = newEntry.getBytes(charset).length;
 
 							MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
 							byte[] hash = messageDigest.digest(newEntry.getBytes(charset));
@@ -86,16 +87,14 @@ public class xIndexUtils {
 							}
 							else {
 								addEntriesToIndex(newEntry, blocknr, columnNr);
-							}*/
-
-							addEntriesToIndex(newEntry, blocknr, columnNr);
+							}
 						}
 
 						HashMap<Integer, Long> split = block2split.get(blockIdOfFirstBlock);
 						split.put(columnNr, blockIdL);
 
 						xLog.print("Added columnNr " + columnNr.intValue() + " to index");
-						if(nBlocks == 28  && columnNr.intValue() == 1) {
+						if(nBlocks == 4  && columnNr.intValue() == 1) {
 							//printIndexSize();
 							//removeIndexEntriesWithMoreThan(14);
 							printIndexSize();
