@@ -212,11 +212,13 @@ public class Selection extends Configured implements Tool {
 		if (!filteredAttrs.equals("")) {
 			conf.setIfUnset("filteredAttrs", filteredAttrs);
 		}
+		
+		conf.setIfUnset("useIndexes", args[4]);
 
 
-		String[] argsN = new String[args.length-4];
-		for (int i = 4; i < args.length; i++) {
-			argsN[i-4] = args[i];
+		String[] argsN = new String[args.length-5];
+		for (int i = 5; i < args.length; i++) {
+			argsN[i-5] = args[i];
 		}
 
 		// the keys are words (strings)

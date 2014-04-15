@@ -259,9 +259,9 @@ public class xIndexUtils {
 	public static HashMap<Integer, String> buildFiltersMap(Configuration job) {
 		HashMap<Integer, String> filtersMap = new HashMap<Integer, String>();
 
-		String filters = job.get("filteredAttrs");
-		if (filters != null) {
-
+		String indexing = job.get("useIndexes");
+		if (indexing == "true") {
+			String filters = job.get("filteredAttrs");
 			String[] filtersByAttr = filters.split(",");
 
 			for (String filteredAttr : filtersByAttr) {
