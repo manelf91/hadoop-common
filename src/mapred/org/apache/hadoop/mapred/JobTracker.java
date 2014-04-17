@@ -1636,6 +1636,7 @@ public class JobTracker implements MRConstants, InterTrackerProtocol,
 
   // Used to provide an HTML view on Job, Task, and TaskTracker structures
   final HttpServer infoServer;
+ // final HttpServer summaryServer;
   int infoPort;
 
   Server interTrackerServer;
@@ -2008,6 +2009,21 @@ public class JobTracker implements MRConstants, InterTrackerProtocol,
     
     infoServer.addServlet("reducegraph", "/taskgraph", TaskGraphServlet.class);
     infoServer.start();
+    
+   /* String summaryAddr= NetUtils.getServerAddress(conf, "mapred.summary.tracker.info.bindAddress",
+            "mapred.summary.tracker.info.port",
+            "mapred.summary.tracker.http.address");
+    InetSocketAddress summaryInfo = NetUtils.createSocketAddr(summaryAddr);
+    String summaryBindAddress = summaryInfo.getHostName();
+    int tmpSummaryPort = summaryInfo.getPort();
+    this.startTime = clock.getTime();
+    summaryServer = new HttpServer("job", summaryBindAddress, tmpSummaryPort, 
+    		tmpSummaryPort == 0, conf, aclsManager.getAdminsAcl());
+    infoServer.setAttribute("summary.tracker", this);
+    
+    infoServer.addServlet("reducegraph", "/taskgraph", TaskGraphServlet.class);
+    infoServer.start();   */
+    
     
     this.trackerIdentifier = identifier;
 
@@ -2543,6 +2559,16 @@ public class JobTracker implements MRConstants, InterTrackerProtocol,
   public long getStartTime() {
     return startTime;
   }
+  
+  public Vector<JobInProgress> allJobs(){
+	  Vector<JobInProgress>v=new Vector<JobInProgress>();
+	  for(Iterator it=jobs.values().iterator();it.hasNext();){
+		  JobInProgress jip=(JobInProgress)it.next();
+		  v.add(jip);
+	  }
+		return v;	  
+  }
+  
   public Vector<JobInProgress> runningJobs() {
     Vector<JobInProgress> v = new Vector<JobInProgress>();
     for (Iterator it = jobs.values().iterator(); it.hasNext();) {
@@ -2554,6 +2580,7 @@ public class JobTracker implements MRConstants, InterTrackerProtocol,
     }
     return v;
   }
+  
   /**
    * Version that is called from a timer thread, and therefore needs to be
    * careful to synchronize.
@@ -2814,6 +2841,11 @@ public class JobTracker implements MRConstants, InterTrackerProtocol,
     trackers.add(taskTracker);
   }
 
+  public Map<String, Set<TaskTracker>> GetHostnameToTaskTracker (){
+	  return hostnameToTaskTracker;
+  }
+  
+  
   public Node resolveAndAddToTopology(String name) throws UnknownHostException {
     List <String> tmpList = new ArrayList<String>(1);
     tmpList.add(name);
