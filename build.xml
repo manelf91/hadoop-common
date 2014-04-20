@@ -341,6 +341,7 @@
     <pathelement location="${conf.dir}"/>
     <fileset dir="${basedir}">
 	<include name="commons-primitives-1.0.jar"/>
+	<include name="lingpipe-4.1.0.jar" />
     </fileset>
   </path>
 
