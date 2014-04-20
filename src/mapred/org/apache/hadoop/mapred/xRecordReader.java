@@ -264,16 +264,18 @@ public class xRecordReader implements RecordReader<LongWritable, Text> {
 					break;
 				}
 
+				int i = 0;
 				for (LineReader in : inN) {
 					Text newValue = new Text();
-					long pos = posN.get(0);
-					newSize = in.readLine(newValue, maxLineLength, Math.max(maxBytesToConsume(pos), maxLineLength));
+					long pos1 = posN.get(i);
+					int newSize1 = in.readLine(newValue, maxLineLength, Math.max(maxBytesToConsume(pos1), maxLineLength));
 					accumulator.set(accumulator.toString() + ";;;" + newValue.toString());
 
-					if (newSize != 0) {
-						pos += newSize;
-						posN.add(0, new Long(pos));
+					if (newSize1 != 0) {
+						pos1 += newSize1;
+						posN.add(i, new Long(pos1));
 					}
+					i++;
 				}
 				value.set(accumulator.toString());
 
