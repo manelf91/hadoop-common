@@ -30,7 +30,7 @@ public class SentimentClassifier {
 
 	public SentimentClassifier() {
 		try { 
-			classifier = (LMClassifier) AbstractExternalizable.readObject(new File("classifier.txt"));
+			classifier = (LMClassifier) AbstractExternalizable.readObject(new File("/home/mgferreira/classifier.txt"));
 			categories = classifier.categories();
 		} catch (Exception e) {
 			e.printStackTrace();

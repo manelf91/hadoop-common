@@ -103,9 +103,6 @@ public class Selection extends Configured implements Tool {
 					return;
 				}
 			}
-			SentimentClassifier sentClassifier = new SentimentClassifier();
-			String text = args[1];
-			String sent = sentClassifier.classify(text);
 			output.collect(word, one);
 		}
 	}
