@@ -103,9 +103,9 @@ public class SelectionSent extends Configured implements Tool {
 				}
 			}
 			SentimentClassifier sentClassifier = new SentimentClassifier();
-			String text = args[1];
+			String text = args[0];
 			String sent = sentClassifier.classify(text);
-			output.collect(new Text(args[0]), new Text(sent));
+			output.collect(new Text(args[1]), new Text(sent));
 		}
 	}
 
@@ -118,7 +118,22 @@ public class SelectionSent extends Configured implements Tool {
 		public void reduce(Text key, Iterator<Text> values,
 				OutputCollector<Text, Text> output, 
 				Reporter reporter) throws IOException {
-			output.collect(key, new Text("test"));
+
+			HashMap<String, Integer> sentiments = new HashMap<String, Integer>();
+
+			while (values.hasNext()) {
+				String sent = values.next().toString();
+				Integer cnt = sentiments.get(sent);
+				if (cnt == null) {
+					cnt = new Integer(1);
+					sentiments.put(sent, cnt);
+				}
+				else {
+					sentiments.put(sent, new Integer(cnt.intValue()+1));
+				}
+			}
+
+			output.collect(key, new Text(sentiments.toString()));
 		}
 	}
 
@@ -207,7 +222,7 @@ public class SelectionSent extends Configured implements Tool {
 		if (!filteredAttrs.equals("")) {
 			conf.setIfUnset("filteredAttrs", filteredAttrs);
 		}
-		
+
 		conf.setIfUnset("useIndexes", args[4]);
 
 
