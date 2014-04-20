@@ -55,7 +55,7 @@ import org.apache.hadoop.util.ToolRunner;
  * To run: bin/hadoop jar build/hadoop-examples.jar wordcount
  *            [-m <i>maps</i>] [-r <i>reduces</i>] <i>in-dir</i> <i>out-dir</i> 
  */
-public class Selection extends Configured implements Tool {
+public class SelectionSent extends Configured implements Tool {
 
 	/**
 	 * Counts the words in each line.
@@ -63,7 +63,7 @@ public class Selection extends Configured implements Tool {
 	 * (<b>word</b>, <b>1</b>).
 	 */
 	public static class MapClass extends MapReduceBase
-	implements Mapper<LongWritable, Text, Text, IntWritable> {
+	implements Mapper<LongWritable, Text, Text, Text> {
 
 		private static HashMap<Integer, String> filtersMap = new HashMap<Integer, String>();
 
@@ -84,11 +84,10 @@ public class Selection extends Configured implements Tool {
 			}
 		}
 
-	    private final static IntWritable one = new IntWritable(1);
-	    private Text word = new Text();
+		private Text word = new Text();
 
 		public void map(LongWritable key, Text value, 
-				OutputCollector<Text, IntWritable> output, 
+				OutputCollector<Text, Text> output, 
 				Reporter reporter) throws IOException {
 			String line = value.toString();
 
@@ -106,7 +105,7 @@ public class Selection extends Configured implements Tool {
 			SentimentClassifier sentClassifier = new SentimentClassifier();
 			String text = args[1];
 			String sent = sentClassifier.classify(text);
-			output.collect(word, one);
+			output.collect(new Text(args[0]), new Text(sent));
 		}
 	}
 
@@ -114,16 +113,12 @@ public class Selection extends Configured implements Tool {
 	 * A reducer class that just emits the sum of the input values.
 	 */
 	public static class Reduce extends MapReduceBase
-	implements Reducer<Text, IntWritable, Text, IntWritable> {
+	implements Reducer<Text, Text, Text, Text> {
 
-		public void reduce(Text key, Iterator<IntWritable> values,
-				OutputCollector<Text, IntWritable> output, 
+		public void reduce(Text key, Iterator<Text> values,
+				OutputCollector<Text, Text> output, 
 				Reporter reporter) throws IOException {
-		      int sum = 0;
-		      while (values.hasNext()) {
-		        sum += values.next().get();
-		      }
-		      output.collect(key, new IntWritable(sum));
+			output.collect(key, new Text("test"));
 		}
 	}
 
@@ -224,7 +219,7 @@ public class Selection extends Configured implements Tool {
 		// the keys are words (strings)
 		conf.setOutputKeyClass(Text.class);
 		// the values are counts (ints)
-		conf.setOutputValueClass(IntWritable.class);
+		conf.setOutputValueClass(Text.class);
 
 		conf.setMapperClass(MapClass.class);        
 		conf.setCombinerClass(Reduce.class);
@@ -265,7 +260,7 @@ public class Selection extends Configured implements Tool {
 
 
 	public static void main(String[] args) throws Exception {
-		int res = ToolRunner.run(new Configuration(), new Selection(), args);
+		int res = ToolRunner.run(new Configuration(), new SelectionSent(), args);
 		System.exit(res);
 	}
 

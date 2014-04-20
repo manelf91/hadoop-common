@@ -31,6 +31,7 @@ import org.apache.hadoop.mapred.WordCountMy_ni_20;
 import org.apache.hadoop.mapred.WordCountMy_ci_20;
 import org.apache.hadoop.mapred.WordCountMy_ci_2;
 import org.apache.hadoop.mapred.Selection;
+import org.apache.hadoop.mapred.SelectionSent;
 
 
 /**
@@ -58,6 +59,8 @@ public class ExampleDriver {
       pgd.addClass("wordcountmy_ci_2", WordCountMy_ci_2.class,
               "A map/reduce program that counts the words in the input files.");
       pgd.addClass("selection", Selection.class,
+              "A map/reduce program that counts the words in the input files.");
+      pgd.addClass("selectionSent", SelectionSent.class,
               "A map/reduce program that counts the words in the input files.");
       pgd.addClass("aggregatewordcount", AggregateWordCount.class, 
                    "An Aggregate based map/reduce program that counts the words in the input files.");
