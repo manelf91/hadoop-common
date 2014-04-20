@@ -8,6 +8,7 @@ import javax.print.attribute.standard.DateTimeAtCompleted;
 public class MapTaskStatistics {
 
 	private long Duration;
+	private String divColorCode;
 	private long MapStartTime;
 	private long MapEndtime;
 	private String MapStartTimeDisplayFormat;
@@ -22,6 +23,7 @@ public class MapTaskStatistics {
 	private long BlockSize;
 	private MapTaskStatistics NextTask;
 	private MapTaskStatistics previousTask;
+	private String splitLocationsString;
 	public long getDuration() {
 		return Duration;
 	}
@@ -111,6 +113,18 @@ public class MapTaskStatistics {
 	}
 	public void setPreviousTask(MapTaskStatistics previousTask) {
 		this.previousTask = previousTask;
+	}
+	public String getDivColorCode() {
+		return divColorCode;
+	}
+	public void setDivColorCode(String divColorCode) {
+		this.divColorCode = divColorCode;
+	}
+	public String getSplitLocationsString() {
+		return splitLocationsString;
+	}
+	public void setSplitLocationsString(String splitLocationsString) {
+		this.splitLocationsString = splitLocationsString;
 	}
 
 }

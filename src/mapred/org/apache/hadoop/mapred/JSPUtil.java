@@ -23,12 +23,15 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
+import java.lang.reflect.Method;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -57,6 +60,7 @@ import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.security.authorize.AccessControlList;
 import org.apache.hadoop.util.ServletUtil;
 import org.apache.hadoop.util.StringUtils;
+
  class JSPUtil {
 	static final String PRIVATE_ACTIONS_KEY = "webinterface.private.actions";
 
@@ -131,6 +135,14 @@ import org.apache.hadoop.util.StringUtils;
 	 }
 	 
 	 public List<MapTaskStatistics>getHeadTaskList(List<MapTaskStatistics>mapTasks){
+	Collections.sort(mapTasks,
+					new Comparator<MapTaskStatistics>() {
+						public int compare(MapTaskStatistics map1,
+								MapTaskStatistics map2) {
+							return Long.compare(map1.getMapStartTime(),
+									map2.getMapStartTime());
+						}
+					});
 	     for (MapTaskStatistics t1: mapTasks)
          {
              for (MapTaskStatistics t2 : mapTasks)
@@ -797,5 +809,56 @@ import org.apache.hadoop.util.StringUtils;
 
 	static boolean privateActionsAllowed(JobConf conf) {
 		return conf.getBoolean(PRIVATE_ACTIONS_KEY, false);
+	}
+	static String getXmlContent(String jobId, Map<String,List<MapTaskStatistics>> groupedReports,long difference){
+		StringBuilder xmlBuilder=new StringBuilder();
+		xmlBuilder.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+		 xmlBuilder.append("<Job id=\""+jobId+"\" time-spent=\""+ (difference/1000)+"seconds\" >\n");
+		for (Map.Entry<String, List<MapTaskStatistics>> entry : groupedReports
+				.entrySet()) {	
+		   xmlBuilder.append("<host name=\""+entry.getKey()+"\" TaskCount=\""+entry.getValue().size()+"\">\n");
+			List<MapTaskStatistics> mapsForNode = entry.getValue();
+			List<MapTaskStatistics> headTasks = new JSPUtil().getHeadTaskList(mapsForNode);
+			MapTaskStatistics statTask = null;
+			for (MapTaskStatistics bar : headTasks) {
+				statTask = bar;
+				while (statTask != null) {
+				xmlBuilder.append("<Task id=\""+statTask.getTaskId()+"\">\n");
+				xmlBuilder.append("<StartTime>"+new Date(statTask.getMapStartTime())+"</StartTime>\n");
+				xmlBuilder.append("<TimeSpent>"+statTask.getDuration()/1000+" seconds</TimeSpent>\n");
+				xmlBuilder.append("<MapOutputRecords>"+statTask.getMapOutputRecordCount()+"</MapOutputRecords>\n");
+				xmlBuilder.append("<SplitFileCount>"+statTask.getSplitFileCount()+"</SplitFileCount>\n");
+				xmlBuilder.append("<SplitLocations>"+statTask.getSplitLocationsString()+"</SplitLocations>\n");
+				xmlBuilder.append("</Task>\n");
+				statTask = statTask.getNextTask();
+				}
+				}
+			xmlBuilder.append("</host>\n");
+		}
+		 xmlBuilder.append("</Job>\n");
+		 String xmlString= xmlBuilder.toString().replace("<", "&lt;");
+		 xmlString = xmlString.replace(">", "&gt;");
+		 xmlString = xmlString.replace("\n", "<br/>");
+		 return xmlString;
+	}
+	
+	public static String printStaticStatistics(){
+		try{
+		Method methods[] = NewMapTaskStatistics.class.getDeclaredMethods();
+		StringBuilder results=new StringBuilder();
+		results.append("<div style=\"padding-left:40px\">");
+		results.append("<div style=\"padding-left:40px\">Map Statistics Details</div>");
+		results.append("<table class=\"table table-striped\" style=\"max-width:400px\">");
+		for(Method m : methods){
+			results.append("<tr><td>"+(String)m.invoke(null,null)+"</td></tr>");
+			}
+			results.append("</table>");
+			results.append("</div>");
+			return results.toString();
+	
+	}
+	catch(Exception ex){
+		return "Error while retrieving the static map details";
+	}
 	}
 }
