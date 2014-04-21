@@ -109,7 +109,6 @@ implements JobConfigurable {
 			FileStatus file = files[i];
 			Path path = file.getPath();
 			long length = file.getLen();
-			long blockSize = file.getBlockSize();
 			long splitSize = file.getLen();
 			FileSystem fs = path.getFileSystem(job);
 
@@ -127,7 +126,7 @@ implements JobConfigurable {
 				if ((j % numberOfBlocksPerSplit) == 0) {
 					paths = new ArrayList<Path>();
 					blocksIds = new ArrayList<Long>();
-					xFileSplit split = new xFileSplit(blocksIds, numberOfBlocksPerSplit, paths, 0, blockSize, splitHosts);
+					xFileSplit split = new xFileSplit(blocksIds, numberOfBlocksPerSplit, paths, 0, length, splitHosts);
 					splits.add(split);
 				}
 				paths.add(path);

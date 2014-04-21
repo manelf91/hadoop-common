@@ -36,7 +36,7 @@ import org.apache.hadoop.io.Text;
  * line.
  */
 public class LineReader {
-	private static final int DEFAULT_BUFFER_SIZE = 64 * 1024;
+	private static final int DEFAULT_BUFFER_SIZE = 200 * 1024;
 	private int bufferSize = DEFAULT_BUFFER_SIZE;
 	private InputStream in;
 	private byte[] buffer;

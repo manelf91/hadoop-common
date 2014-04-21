@@ -190,8 +190,10 @@ public class xIndexUtils {
 	//-1=irrelevant, 1=relevant, 0=non_local_block
 	public static int checkIfRelevantRowGroup(HashMap<Integer, String> filters, long blockId) {
 		xLog.print("xIndexUtils: Going to check if row group " + blockId + " is relevant");
-		if(filters.size() == 0)
+		if(filters.size() == 0) {
+			xLog.print("xIndexUtils: There are no filters. Block is relevant");
 			return 1;
+		}
 
 		HashMap<Integer, Long> split = (HashMap<Integer, Long>) block2split.get(new Long(blockId));
 
@@ -260,7 +262,7 @@ public class xIndexUtils {
 		HashMap<Integer, String> filtersMap = new HashMap<Integer, String>();
 
 		String indexing = job.get("useIndexes");
-		if (indexing == "true") {
+		if (indexing.equals("true")) {
 			String filters = job.get("filteredAttrs");
 			String[] filtersByAttr = filters.split(",");
 
@@ -268,7 +270,7 @@ public class xIndexUtils {
 				String body = job.get("filter" + filteredAttr);
 				String filter = body.substring(body.indexOf(" ")+1);
 
-				System.out.println(filteredAttr+": " + filter);
+				System.out.println("xIndexUtils: " + filteredAttr+": " + filter);
 
 				filtersMap.put(new Integer(filteredAttr), filter);
 			}

@@ -57,6 +57,11 @@ public class xRecordReader implements RecordReader<LongWritable, Text> {
 	private ArrayList<LineReader> inN = new ArrayList<LineReader> ();
 	private ArrayList<Seekable> filePositionN = new ArrayList<Seekable>();
 	private ArrayList<Long> posN = new ArrayList<Long>();
+	private ArrayList<Long> startN = new ArrayList<Long>();
+	private ArrayList<CompressionCodecFactory> compressionCodecsN = new ArrayList<CompressionCodecFactory>();
+	private ArrayList<CompressionCodec> codecN = new ArrayList<CompressionCodec>();
+	private ArrayList<Decompressor> decompressorN = new ArrayList<Decompressor>();
+	
 	private int currentRowGroupIndex;
 	private int relevantBlock;
 
@@ -65,7 +70,9 @@ public class xRecordReader implements RecordReader<LongWritable, Text> {
 	private ArrayList<FSDataInputStream> array2inputStreams = new ArrayList<FSDataInputStream>();
 
 	private xFileSplit split;
-	private Configuration job;	
+	private Configuration job;
+
+	int line = -1;
 
 	/**
 	 * A class that provides a line reader from an input stream.
@@ -125,57 +132,64 @@ public class xRecordReader implements RecordReader<LongWritable, Text> {
 			// open the file and seek to the start of the split
 			FileSystem fs = file.getFileSystem(job);
 
-			for (Path path : pathsToBlocksOfRelevantSplit) {
-				array2inputStreams.add(fs.open(path));
-			}
 			FSDataInputStream fileIn = fs.open(file);
+			int i = 0;
+			for (Path path : pathsToBlocksOfRelevantSplit) {
+				array2inputStreams.add(i, fs.open(path));
+				startN.add(i, new Long(0));
+				CompressionCodecFactory compressionCodecsTmp = new CompressionCodecFactory(job);
+				compressionCodecsN.add(i,compressionCodecsTmp);
+				codecN.add(i,compressionCodecsTmp.getCodec(path));
+				i++;
+			}
 
 			if (isCompressedInput()) {
 				decompressor = CodecPool.getDecompressor(codec);
-				if (codec instanceof SplittableCompressionCodec) {
-					final SplitCompressionInputStream cIn = ((SplittableCompressionCodec)codec).createInputStream(
-									fileIn, decompressor, start, end, SplittableCompressionCodec.READ_MODE.BYBLOCK);
-					in = new LineReader(cIn, job);
-					start = cIn.getAdjustedStart();
-					end = cIn.getAdjustedEnd();
-					filePosition = cIn; // take pos from compressed stream
-					
-					for (FSDataInputStream fileInN: array2inputStreams) {
-						final SplitCompressionInputStream cInN = ((SplittableCompressionCodec)codec).createInputStream(
-								fileInN, decompressor, start, end, SplittableCompressionCodec.READ_MODE.BYBLOCK);
-						inN.add(new LineReader(cInN, job));
-						cInN.getAdjustedStart();
-						cInN.getAdjustedEnd();
-						filePositionN.add(cInN); // take pos from compressed stream
-					}
-				} else {
+				if (!(codec instanceof SplittableCompressionCodec)) {
 					in = new LineReader(codec.createInputStream(fileIn, decompressor), job);
 					filePosition = fileIn;
-					
+
+					i = 0;
 					for (FSDataInputStream fileInN: array2inputStreams) {
-						inN.add(new LineReader(codec.createInputStream(fileInN, decompressor), job));
-						filePositionN.add(fileInN);
+						CompressionCodec codecTmp  = codecN.get(i);
+						Decompressor decompressorTmp = CodecPool.getDecompressor(codecTmp);
+						inN.add(i, new LineReader(codecTmp.createInputStream(fileInN, decompressorTmp), job));
+						filePositionN.add(i, fileInN);
+						i++;
 					}
 				}
 			} else {
-				for (FSDataInputStream fileInN: array2inputStreams) {
-					fileInN.seek(start);
-					inN.add(new LineReader(fileInN, job));
-					filePositionN.add(fileInN);
-				}
 				fileIn.seek(start);
 				in = new LineReader(fileIn, job);
 				filePosition = fileIn;
+
+				i = 0;
+				for (FSDataInputStream fileInN: array2inputStreams) {
+					fileInN.seek(startN.get(i));
+					inN.add(i, new LineReader(fileInN, job));
+					filePositionN.add(i, fileInN);
+					i++;
+				}
 			}
 			// If this is not the first split, we always throw away first record
 			// because we always (except the last split) read one extra line in
 			// next() method.
 			if (start != 0) {
 				start += in.readLine(new Text(), 0, maxBytesToConsume(start));
+
+				i = 0;
+				for (LineReader reader: inN) {
+					long startn = startN.remove(i).longValue();
+					startn += reader.readLine(new Text(), 0, maxBytesToConsume(startn));
+					startN.add(i, new Long(startn));
+					i++;
+				}
 			}
 			this.pos = start;
-			for (Path path : pathsToBlocksOfRelevantSplit) {
-				posN.add(new Long(0));
+			i = 0;
+			for (Long startn : startN) {
+				posN.add(i, startn);
+				i++;
 			}
 		}
 	}
@@ -191,8 +205,14 @@ public class xRecordReader implements RecordReader<LongWritable, Text> {
 			String fileName = file.getName();
 			String newFileName = fileName.replace(FIRST_COLUMN_IDENTIFIER, "_" + relevantAttr + "_");
 			Path newPath = new Path(filePath, newFileName);
-			paths.add(newPath);
+			if(newFileName.contains(FIRST_COLUMN_IDENTIFIER)) {
+				paths.add(0, newPath);
+			}
+			else {
+				paths.add(newPath);
+			}
 		}
+		System.out.println("paths: " + paths.toString());
 		return paths;
 	}
 
@@ -249,35 +269,38 @@ public class xRecordReader implements RecordReader<LongWritable, Text> {
 	/** Read a line. */
 	public synchronized boolean next(LongWritable key, Text value)
 			throws IOException {
-
 		while(currentRowGroupIndex < split.getNumberOfFiles()) {
 			while (getFilePosition() <= end) {
 				if(relevantBlock == -1) {
 					break;
 				}
+				line++;
 				key.set(pos);
 
 				int newSize = in.readLine(value, maxLineLength, Math.max(maxBytesToConsume(pos), maxLineLength));
 				Text accumulator = new Text(value.toString());
-				
+
 				if (newSize == 0) {
 					break;
 				}
 
 				int i = 0;
-				for (LineReader in : inN) {
+				for (LineReader in1 : inN) {
 					Text newValue = new Text();
 					long pos1 = posN.get(i);
-					int newSize1 = in.readLine(newValue, maxLineLength, Math.max(maxBytesToConsume(pos1), maxLineLength));
+					int newSize1 = in1.readLine(newValue, maxLineLength, Math.max(maxBytesToConsume(pos1), maxLineLength));
 					accumulator.set(accumulator.toString() + ";;;" + newValue.toString());
 
 					if (newSize1 != 0) {
 						pos1 += newSize1;
+						posN.remove(i);
 						posN.add(i, new Long(pos1));
 					}
 					i++;
+					System.out.println("line: " + line + "newValue:" + newValue.toString());
 				}
 				value.set(accumulator.toString());
+				System.out.println(value.toString());
 
 				pos += newSize;
 				if (newSize < maxLineLength) {
