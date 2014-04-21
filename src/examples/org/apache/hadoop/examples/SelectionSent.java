@@ -103,7 +103,10 @@ public class SelectionSent extends Configured implements Tool {
 				}
 			}
 			SentimentClassifier sentClassifier = new SentimentClassifier();
-			String text = args[1];
+			String text = "";
+			if(args.length == 2) {
+				text = args[1];
+			}
 			String sent = sentClassifier.classify(text);
 			output.collect(new Text(args[0]), new Text(sent));
 			System.out.println("output! " + sent);

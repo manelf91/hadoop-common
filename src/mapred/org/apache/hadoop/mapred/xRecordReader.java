@@ -299,7 +299,6 @@ public class xRecordReader implements RecordReader<LongWritable, Text> {
 					i++;
 				}
 				value.set(accumulator.toString());
-				System.out.println(value.toString());
 
 				pos += newSize;
 				if (newSize < maxLineLength) {
