@@ -106,7 +106,7 @@ public class SelectionSent extends Configured implements Tool {
 			String text = args[1];
 			String sent = sentClassifier.classify(text);
 			output.collect(new Text(args[0]), new Text(sent));
-			System.out.println("output! " + args[0]);
+			System.out.println("output! " + sent);
 		}
 	}
 
@@ -132,6 +132,7 @@ public class SelectionSent extends Configured implements Tool {
 				else {
 					sentiments.put(sent, new Integer(cnt.intValue()+1));
 				}
+				System.out.println("sent:" + sent);
 			}
 
 			output.collect(key, new Text(sentiments.toString()));
@@ -237,8 +238,7 @@ public class SelectionSent extends Configured implements Tool {
 		// the values are counts (ints)
 		conf.setOutputValueClass(Text.class);
 
-		conf.setMapperClass(MapClass.class);        
-		conf.setCombinerClass(Reduce.class);
+		conf.setMapperClass(MapClass.class);
 		conf.setReducerClass(Reduce.class);
 		conf.setInputFormat(xInputFormat.class);
 
