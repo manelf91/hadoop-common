@@ -47,7 +47,6 @@
           cont= cont.replace(/&lt;/g, "<");
           cont= cont.replace(/&gt;/g, ">");
           cont= cont.replace(/<br>/g, "");
-          alert(cont);
           document.getElementById("export").href = "data:text/xml;charset=utf-8," + cont; //document.getElementById("sample").innerHTML;
           // this.innerHTML = "[Export conent]";
 	});
@@ -255,8 +254,8 @@
 						.getHeadTaskList(mapsForNode);
 				out.println("<div class=\"timeline\">");
 				long taskDuration = 0;
-				long width = 0;
-				long left = 0;
+				double width = 0;
+				double left = 0;
 				int count = 0;
 				String color = "#9043B9";
 				MapTaskStatistics statTask = null;
@@ -291,16 +290,16 @@
 								"<br/> Split Locations : %s",
 								inputSplitLocations.toString()));
 
-						color = locationToColorMap.get(bar.getSplitLocationsString());
+						color = locationToColorMap.get(statTask.getSplitLocationsString());
 						taskDuration = statTask.getMapEndtime()
 								- statTask.getMapStartTime();
-						width = (taskDuration * 100) / difference;
+						width =(double) ((taskDuration * 100)) / difference;
 						if (statTask.getPreviousTask() == null) {
-							left = ((statTask.getMapStartTime() - minStartTime) * 100)
+							left = (double)(((statTask.getMapStartTime() - minStartTime) * 100))
 									/ difference;
 						} else {
-							left = ((statTask.getMapStartTime() - statTask
-									.getPreviousTask().getMapEndtime()) * 100)
+							left = (double)(((statTask.getMapStartTime() - statTask
+									.getPreviousTask().getMapEndtime()) * 100))
 									/ difference;
 						}
 						out.print("<div class=\"mid2\" data-placement=\"top\" rel=\"popover\" data-content=\""

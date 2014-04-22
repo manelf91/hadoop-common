@@ -139,8 +139,12 @@ import org.apache.hadoop.util.StringUtils;
 					new Comparator<MapTaskStatistics>() {
 						public int compare(MapTaskStatistics map1,
 								MapTaskStatistics map2) {
-							return Long.compare(map1.getMapStartTime(),
-									map2.getMapStartTime());
+							if(map1.getMapStartTime()<map2.getMapStartTime()){return -1;}
+							else if(map1.getMapStartTime()>map2.getMapStartTime()){return 1;}
+							else{
+								return 0;
+							}
+
 						}
 					});
 	     for (MapTaskStatistics t1: mapTasks)
@@ -824,6 +828,7 @@ import org.apache.hadoop.util.StringUtils;
 				statTask = bar;
 				while (statTask != null) {
 				xmlBuilder.append("<Task id=\""+statTask.getTaskId()+"\">\n");
+				xmlBuilder.append("<StartTimeAsLongVal>"+statTask.getMapStartTime()+"</StartTimeAsLongVal>\n");
 				xmlBuilder.append("<StartTime>"+new Date(statTask.getMapStartTime())+"</StartTime>\n");
 				xmlBuilder.append("<TimeSpent>"+statTask.getDuration()/1000+" seconds</TimeSpent>\n");
 				xmlBuilder.append("<MapOutputRecords>"+statTask.getMapOutputRecordCount()+"</MapOutputRecords>\n");

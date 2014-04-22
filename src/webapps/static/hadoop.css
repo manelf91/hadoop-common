@@ -190,7 +190,7 @@ ul.intervals li.first {
 
 .events {
     list-style-type: none;
-    padding-bottom: 20px;
+    padding-bottom: 3px;
 }
 
 /* The width depends on the number of intervals. For example 100 / 7 = 14.29% -- then subtract a little bit for room for the borders */
