@@ -526,15 +526,15 @@ import org.apache.hadoop.util.StringUtils;
 		StringBuilder sb = new StringBuilder();
 		sb.append("<h3>Click on the job link to view each node's behavior</h3>");
 		sb.append("<table class=\"table table-striped\">");
-		sb.append("<th><td>Job Name</td><td>Job Status</td></th>");
+		sb.append("<tr><td><b>Job Name</b></td><td><b>Job Start Time</b></td></tr>");
 		for (Iterator<JobInProgress> it = jobs.iterator(); it.hasNext();) {
 			JobInProgress job = (JobInProgress) it.next();
 			JobProfile profile = job.getProfile();
 			
-			sb.append("<tr><<td><a href=\"summary.jsp?jobid=" + job.getJobID()
+			sb.append("<tr><td><a href=\"summary.jsp?jobid=" + job.getJobID()
 					+ "\">" + profile.getJobName() + "-" + job.getJobID()
 					+ "</a></td>");
-			sb.append("<<td>" + job.status + "</td></tr>");
+			sb.append("<td>" + job.startTime + "</td></tr>");
 
 		}
 
@@ -847,18 +847,28 @@ import org.apache.hadoop.util.StringUtils;
 		 return xmlString;
 	}
 	
+	public int getRunningMapCount(List<MapTaskStatistics>stats){
+		int count=0;
+		for(MapTaskStatistics entry: stats){
+			if(entry.getMapStatus().equals(TaskStatus.State.SUCCEEDED.name())){
+				count++;
+			}
+		}
+		return count;
+	}
+	
 	public static String printStaticStatistics(){
 		try{
 		Method methods[] = NewMapTaskStatistics.class.getDeclaredMethods();
 		StringBuilder results=new StringBuilder();
-		results.append("<div style=\"padding-left:40px\">");
-		results.append("<div style=\"padding-left:40px\">Map Statistics Details</div>");
-		results.append("<table class=\"table table-striped\" style=\"max-width:400px\">");
+		results.append("<div style=\"padding-left:40px\">\n");
+		results.append("<div style=\"padding-left:40px\">\nMap Statistics Details\n</div>\n");
+		results.append("<table class=\"table table-striped\" style=\"max-width:400px\">\n");
 		for(Method m : methods){
-			results.append("<tr><td>"+(String)m.invoke(null,null)+"</td></tr>");
+			results.append("<tr>\n<td>\n"+(String)m.invoke(null,null)+"\n</td>\n</tr>\n");
 			}
-			results.append("</table>");
-			results.append("</div>");
+			results.append("</table>\n");
+			results.append("</div>\n");
 			return results.toString();
 	
 	}

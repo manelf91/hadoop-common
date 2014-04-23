@@ -36,23 +36,21 @@
 		$(".mid2").popover({
 			html : true
 		});
-		
+
 		$('#view').on('click', function(e) {
-		    e.preventDefault();
-		    $("#xmlDiv").collapse('toggle');
+			e.preventDefault();
+			$("#xmlDiv").collapse('toggle');
 		});
-		
-		  document.getElementById("export").download = "export.xml";
-          var cont = document.getElementById("xmlDiv").innerHTML;
-          cont= cont.replace(/&lt;/g, "<");
-          cont= cont.replace(/&gt;/g, ">");
-          cont= cont.replace(/<br>/g, "");
-          document.getElementById("export").href = "data:text/xml;charset=utf-8," + cont; //document.getElementById("sample").innerHTML;
-          // this.innerHTML = "[Export conent]";
+
+		document.getElementById("export").download = "export.xml";
+		var cont = document.getElementById("xmlDiv").innerHTML;
+		cont = cont.replace(/&lt;/g, "<");
+		cont = cont.replace(/&gt;/g, ">");
+		cont = cont.replace(/<br>/g, "");
+		document.getElementById("export").href = "data:text/xml;charset=utf-8,"
+				+ cont; //document.getElementById("sample").innerHTML;
+		// this.innerHTML = "[Export conent]";
 	});
-	
-	
-		
 </script>
 </head>
 <body>
@@ -92,13 +90,6 @@
 
 		/* ------------ Response generation begins here ------------ */
 
-		/* For now, "json" is the only supported format. 
-		 *
-		 * As more formats are supported, this should become a cascading 
-		 * if-elsif-else block.
-		 */
-
-		// Spit out HTML only in the absence of the "format" query parameter.
 		response.setContentType("text/html; charset=UTF-8");
 
 		final JobTracker tracker = (JobTracker) application
@@ -106,13 +97,13 @@
 		String trackerName = StringUtils.simpleHostname(tracker
 				.getJobTrackerMachine());
 		String jobid = request.getParameter("jobid");
-      out.println("<h1>Job Statistics</h1>");
+		out.println("<h1>Job Statistics</h1>");
 		if (jobid == null) {
 			out.println("<h2>Missing 'jobid'!</h2>");
 			return;
 		}
 
-		Set<String>splitLocationsSet=new HashSet<String>();
+		Set<String> splitLocationsSet = new HashSet<String>();
 		final JobID jobidObj = JobID.forName(jobid);
 		final JobInProgress job = tracker.getJob(jobidObj);
 		TaskReport[] reports = tracker.getMapTaskReports(jobidObj);
@@ -134,82 +125,103 @@
 
 							tip.getMapInputSize();
 							TaskStatus[] available = tip.getTaskStatuses();
-							MapTaskStatistics stat = new MapTaskStatistics();
-							stat.setTaskId(report.getTaskID().toString());
-							TaskStatus running = available[available.length - 1];
-							stat.setMapStatus(running.getStateString());
-							stat.setMapStartTime(running.getStartTime());
-							stat.setMapEndtime(running.getFinishTime());
-							//stat.setMapStartTimeDisplayFormat(StringUtils.getFormattedTimeWithDiff(dateFormat, running.getStartTime(), 0));
-							// stat.setMapFinishedTimeDisplayFormat(StringUtils.getFormattedTimeWithDiff(dateFormat, running.getFinishTime(), 0));
-							long duration = running.getFinishTime()
-									- running.getStartTime();
-							stat.setDuration(duration);
 
-							stat.setSplitFileCount(tip.getSplitLocations().length);
-							String locationString=tip.getSplitNodes();
-							splitLocationsSet.add(locationString);
-							stat.setSplitLocationsString(locationString);
-							stat.setInputSplitLocations(StringUtils
-									.split(locationString));
-							//   out.println("split name"+tip.getSpl);
+							for (TaskStatus running : available) {
+								if ((running.getRunState()
+										.equals(TaskStatus.State.SUCCEEDED))
+										|| running.getRunState().equals(
+												TaskStatus.State.KILLED)) {
 
-							minStartTime = JSPUtil.getMinStartTime(
-									minStartTime, running.getStartTime());
-							maxEndTime = JSPUtil.getMaxEndTime(maxEndTime,
-									running.getFinishTime());
-							Counters.Group group = running
-									.getCounters()
-									.getGroup(
-											"org.apache.hadoop.mapred.Task$Counter");
+									MapTaskStatistics stat = new MapTaskStatistics();
+									stat.setTaskId(report.getTaskID()
+											.toString());
+									//TaskStatus running = available[available.length - 1];
+									//out.print("Task status is"+ running.getRunState().name());
+									stat.setMapStatus(running
+											.getRunState().name());
+									stat.setMapStartTime(running
+											.getStartTime());
+									stat.setMapEndtime(running
+											.getFinishTime());
+									//stat.setMapStartTimeDisplayFormat(StringUtils.getFormattedTimeWithDiff(dateFormat, running.getStartTime(), 0));
+									// stat.setMapFinishedTimeDisplayFormat(StringUtils.getFormattedTimeWithDiff(dateFormat, running.getFinishTime(), 0));
+									long duration = running.getFinishTime()
+											- running.getStartTime();
+									stat.setDuration(duration);
 
-							//out.println("Map Output is"+group.getCounterForName("MAP_OUTPUT_RECORDS").getValue()+"CPU Time is "+group.getCounter("CPU_MILLISECONDS"));
-							stat.setCPUTime(group.getCounterForName(
-									"CPU_MILLISECONDS").getValue());
-							stat.setMapOutputRecordCount(group
-									.getCounterForName("MAP_OUTPUT_RECORDS")
-									.getValue());
-							//out.println("Map output "+stat.getMapOutputRecordCount());
+									stat.setSplitFileCount(tip
+											.getSplitLocations().length);
+									String locationString = tip
+											.getSplitNodes();
+									splitLocationsSet.add(locationString);
+									stat.setSplitLocationsString(locationString);
+									stat.setInputSplitLocations(StringUtils
+											.split(locationString));
+									//   out.println("split name"+tip.getSpl);
 
-							//	out.println("Task Status is"+ running.getRunState());
-							TaskTrackerStatus taskTracker = tracker
-									.getTaskTrackerStatus(running
-											.getTaskTracker());
+									minStartTime = JSPUtil.getMinStartTime(
+											minStartTime,
+											running.getStartTime());
+									maxEndTime = JSPUtil.getMaxEndTime(
+											maxEndTime,
+											running.getFinishTime());
+									Counters.Group group = running
+											.getCounters()
+											.getGroup(
+													"org.apache.hadoop.mapred.Task$Counter");
 
-							//register this servlet on task tracker- heta kranna
-							String[] values = new JSPUtil().getSplitCount(
-									taskTracker.getHost(), taskTracker
-											.getHttpPort(), running
-											.getTaskID().toString());
+									//out.println("Map Output is"+group.getCounterForName("MAP_OUTPUT_RECORDS").getValue()+"CPU Time is "+group.getCounter("CPU_MILLISECONDS"));
+									stat.setCPUTime(group
+											.getCounterForName(
+													"CPU_MILLISECONDS")
+											.getValue());
+									stat.setMapOutputRecordCount(group
+											.getCounterForName(
+													"MAP_OUTPUT_RECORDS")
+											.getValue());
+									//out.println("Map output "+stat.getMapOutputRecordCount());
 
-							try {
-								stat.setSplitCountStatus(values[0]);
-								if (values[0].equals("success")) {
-									stat.setSplitFileCount(Integer
-											.parseInt(values[1]));
+									//	out.println("Task Status is"+ running.getRunState());
+									TaskTrackerStatus taskTracker = tracker
+											.getTaskTrackerStatus(running
+													.getTaskTracker());
+
+									//register this servlet on task tracker- heta kranna
+									String[] values = new JSPUtil()
+											.getSplitCount(taskTracker
+													.getHost(), taskTracker
+													.getHttpPort(), running
+													.getTaskID().toString());
+
+									try {
+										stat.setSplitCountStatus(values[0]);
+										if (values[0].equals("success")) {
+											stat.setSplitFileCount(Integer
+													.parseInt(values[1]));
+										}
+									} catch (Exception ex) {
+										stat.setSplitCountStatus("error");
+									}
+									//out.println("The split count " +values[0]+" and "+ values[1]+" and from stat "+stat.getSplitFileCount());
+									//out.println("Host is " + taskTracker.getHost());
+									//+"-"+taskTracker.getHttpPort());
+									String host = taskTracker.getHost();
+									if (groupedReports.containsKey(host)) {
+										List<MapTaskStatistics> nodeList = groupedReports
+												.get(host);
+										nodeList.add(stat);
+										groupedReports.put(host, nodeList);
+
+									} else {
+										List<MapTaskStatistics> nodeList = new ArrayList<MapTaskStatistics>();
+										nodeList.add(stat);
+										groupedReports.put(host, nodeList);
+
+									}
 								}
-							} catch (Exception ex) {
-								stat.setSplitCountStatus("error");
-							}
-							//out.println("The split count " +values[0]+" and "+ values[1]+" and from stat "+stat.getSplitFileCount());
-							//out.println("Host is " + taskTracker.getHost());
-							//+"-"+taskTracker.getHttpPort());
-							String host = taskTracker.getHost();
-							if (groupedReports.containsKey(host)) {
-								List<MapTaskStatistics> nodeList = groupedReports
-										.get(host);
-								nodeList.add(stat);
-								groupedReports.put(host, nodeList);
-
-							} else {
-								List<MapTaskStatistics> nodeList = new ArrayList<MapTaskStatistics>();
-								nodeList.add(stat);
-								groupedReports.put(host, nodeList);
-
 							}
 						}
 					}
-
 				}
 			} catch (Exception ex) {
 				StringWriter errors = new StringWriter();
@@ -218,38 +230,31 @@
 			}
 			long difference = (maxEndTime - minStartTime);
 			//assign colors for the split location set
-			String colorCodes=   "#C67171:#71C671:#8470FF:#FFE4B5:#FF4500:#EEEE00:#8E388E:#292421:#008B00:#33A1C9:#FF00FF:#FFE1FF:#9400D3:#0000FF:71C671";                    //to be moved into a config file later
-			String[] colorArray=colorCodes.split(":");
-			Map<String,String> locationToColorMap=new HashMap<String,String>();
-			int colorCount=0;
-			for(String location: splitLocationsSet){
-				if(colorCount>=colorArray.length-1){
+			String colorCodes = "#C67171:#71C671:#8470FF:#FFE4B5:#FF4500:#EEEE00:#8E388E:#292421:#008B00:#33A1C9:#FF00FF:#FFE1FF:#9400D3:#0000FF:71C671"; //to be moved into a config file later
+			String[] colorArray = colorCodes.split(":");
+			Map<String, String> locationToColorMap = new HashMap<String, String>();
+			int colorCount = 0;
+			for (String location : splitLocationsSet) {
+				if (colorCount >= colorArray.length - 1) {
 					locationToColorMap.put(location, "#9043B9");
-				}
-				else{
-				locationToColorMap.put(location, colorArray[colorCount]);
-				colorCount++;
+				} else {
+					locationToColorMap
+							.put(location, colorArray[colorCount]);
+					colorCount++;
 				}
 			}
 			out.println("<b>"
 					+ String.format(
 							"Total time taken for the job is %.2f seconds",
-							(double) difference / (1000)) + "</b><br/>");	
-			out.println("Data format represented by a task is: map output records;split file size;split location");						
-							double slotSize = (double) difference / (10 * 1000);
+							(double) difference / (1000)) + "</b><br/>");
+			out.println("Data format represented by a task is: map output records;split file size;split location");
+			double slotSize = (double) difference / (10 * 1000);
 			for (Map.Entry<String, List<MapTaskStatistics>> entry : groupedReports
 					.entrySet()) {
-				out.println("<h4><b>Host Name:" + entry.getKey() + ";Runing Map Count:"+entry.getValue().size()+"</b></h4><br/>");
+				out.println("<h4><b>Host Name:" + entry.getKey()
+						+ ";Succeeded Map Count:" +new JSPUtil().getRunningMapCount(entry.getValue())
+						+ "</b></h4>");
 				List<MapTaskStatistics> mapsForNode = entry.getValue();
-			/*	Collections.sort(mapsForNode,
-						new Comparator<MapTaskStatistics>() {
-							@Override
-							public int compare(MapTaskStatistics map1,
-									MapTaskStatistics map2) {
-								return Long.compare(map1.getMapStartTime(),
-										map2.getMapStartTime());
-							}
-						});*/   //moved to utils itself
 				List<MapTaskStatistics> headTasks = new JSPUtil()
 						.getHeadTaskList(mapsForNode);
 				out.println("<div class=\"timeline\">");
@@ -289,16 +294,21 @@
 						popupContentBuilder.append(String.format(
 								"<br/> Split Locations : %s",
 								inputSplitLocations.toString()));
-
+                      if(statTask.getMapStatus().equals(TaskStatus.State.SUCCEEDED.name())){
 						color = locationToColorMap.get(statTask.getSplitLocationsString());
+                      }
+                      else{
+                    	  color="#000000";
+                      }
 						taskDuration = statTask.getMapEndtime()
 								- statTask.getMapStartTime();
-						width =(double) ((taskDuration * 100)) / difference;
+						width = (double) ((taskDuration * 100))
+								/ difference;
 						if (statTask.getPreviousTask() == null) {
-							left = (double)(((statTask.getMapStartTime() - minStartTime) * 100))
+							left = (double) (((statTask.getMapStartTime() - minStartTime) * 100))
 									/ difference;
 						} else {
-							left = (double)(((statTask.getMapStartTime() - statTask
+							left = (double) (((statTask.getMapStartTime() - statTask
 									.getPreviousTask().getMapEndtime()) * 100))
 									/ difference;
 						}
@@ -310,37 +320,42 @@
 								+ width
 								+ "%;background-color:"
 								+ color
-								+";color:black"
-								+";overflow: hidden;text-overflow: ellipsis;white-space: nowrap;"
-								+"font-weight:normal"
-								+";border:2px solid black"
-								+ ";margin-left:" + left + "%\">"+statTask.getMapOutputRecordCount()+";"+statTask.getSplitFileCount()+";"+statTask.getSplitLocationsString()+"</div>");
+								+ ";color:black"
+								+ ";overflow: hidden;text-overflow: ellipsis;white-space: nowrap;"
+								+ "font-weight:normal"
+								+ ";border:2px solid black"
+								+ ";margin-left:"
+								+ left
+								+ "%\">"
+								+ statTask.getMapOutputRecordCount()
+								+ ";"
+								+ statTask.getSplitFileCount()
+								+ ";"
+								+ statTask.getSplitLocationsString()
+								+ "</div>");
 						statTask = statTask.getNextTask();
 						count++;
 					}
 					out.print("</div>");
 				}
-				}
+			}
 			out.print("<div class=\"events\">");
 			out.print("<div class=\"first\" >"
 					+ String.format("%.2f", slotSize) + "</div>");
 			for (int i = 2; i <= 10; i++) {
 				out.print("<div class=\"first\" >"
-						+ String.format("%.2f", slotSize * i)
-						+ "</div>");
-
+						+ String.format("%.2f", slotSize * i) + "</div>");
 			}
 			out.print("</div");
 			out.print("</div>");
-			
-			String xmlContent=JSPUtil.getXmlContent(jobid,groupedReports,difference);
-			
-			 out.print("<div class=\"row\" style=\"padding-left:20px\"><h4><a id=\"view\" class=\"btn\" href=\"#\">View details &raquo;</a><a class=\"btn\" id=\"export\" >Save XML &raquo;</a></h4> <div id=\"xmlDiv\" style=\"padding-left:30px;\" class=\"collapse\">"+xmlContent+"</div></div>");
+
+			String xmlContent = JSPUtil.getXmlContent(jobid,
+					groupedReports, difference);
+
+			out.print("<div class=\"row\" style=\"padding-left:20px\"><h4><a id=\"view\" class=\"btn\" href=\"#\">View details &raquo;</a><a class=\"btn\" id=\"export\" >Save XML &raquo;</a></h4> <div id=\"xmlDiv\" style=\"padding-left:30px;\" class=\"collapse\">"
+					+ xmlContent + "</div></div>");
 		}
 	%>
-
-
-
 
 	<%
 		out.println(JSPUtil.printStaticStatistics());
