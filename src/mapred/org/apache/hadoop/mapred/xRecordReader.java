@@ -289,7 +289,7 @@ public class xRecordReader implements RecordReader<LongWritable, Text> {
 					Text newValue = new Text();
 					long pos1 = posN.get(i);
 					int newSize1 = in1.readLine(newValue, maxLineLength, Math.max(maxBytesToConsume(pos1), maxLineLength));
-					accumulator.set(accumulator.toString() + ";;;" + newValue.toString());
+					accumulator.set(accumulator.toString() + ";$;#;" + newValue.toString());
 
 					if (newSize1 != 0) {
 						pos1 += newSize1;

@@ -90,10 +90,10 @@ public class SelectionSent extends Configured implements Tool {
 				OutputCollector<Text, Text> output, 
 				Reporter reporter) throws IOException {
 			String line = value.toString();
+			
+			String keyS = line.substring(0, line.indexOf(";$;#;"));
 
-			word.set(line);
-
-			String[] args = word.toString().split(";;;");
+			String[] args = line.split(";$;#;");
 			for (Map.Entry<Integer,String> entry : filtersMap.entrySet()) {
 				int attrNr = entry.getKey().intValue();
 				String filter = entry.getValue();
@@ -105,11 +105,10 @@ public class SelectionSent extends Configured implements Tool {
 			SentimentClassifier sentClassifier = new SentimentClassifier();
 			String text = "";
 			if(args.length == 2) {
-				text = args[1];
+				text = line.substring(line.indexOf(";$;#;")+5);
 			}
 			String sent = sentClassifier.classify(text);
 			output.collect(new Text(args[0]), new Text(sent));
-			System.out.println("output! " + sent);
 		}
 	}
 
@@ -135,9 +134,7 @@ public class SelectionSent extends Configured implements Tool {
 				else {
 					sentiments.put(sent, new Integer(cnt.intValue()+1));
 				}
-				System.out.println("sent:" + sent);
 			}
-
 			output.collect(key, new Text(sentiments.toString()));
 		}
 	}
