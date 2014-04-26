@@ -75,7 +75,7 @@ public class Sort extends Configured implements Tool {
 			String line = value.toString();
 
 			String keyS = line.substring(0, line.indexOf(";$;#;"));
-			String valueS = line.substring(line.indexOf(";$;#;")+5);
+			String valueS = line.substring(line.indexOf(";$;#;"));
 
 			word.set(keyS);
 			output.collect(word, new Text(valueS));
