@@ -78,7 +78,7 @@ public class Sort extends Configured implements Tool {
 			String valueS = line.substring(line.indexOf(";$;#;"));
 
 			word.set(keyS);
-			output.collect(word, new Text(valueS));
+			output.collect(word, new Text(line));
 		}
 	}
 
@@ -93,7 +93,7 @@ public class Sort extends Configured implements Tool {
 				Reporter reporter) throws IOException {
 			while (values.hasNext()) {
 				String valueS = values.next().toString();
-				output.collect(key, new Text(valueS));
+				output.collect(new Text(valueS), new Text(""));
 			}
 		}
 	}
