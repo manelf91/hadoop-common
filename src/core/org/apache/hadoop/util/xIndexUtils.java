@@ -4,92 +4,95 @@ import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.math.BigInteger;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.charset.Charset;
-import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 
-import org.apache.commons.collections.primitives.ArrayLongList;
+import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
 
 public class xIndexUtils {
 
-	private static Long blockIdOfFirstBlock;
 	// <attribute nr, <attribute value, blockId>>
-	public final static HashMap<Integer, HashMap<String, BitSet>> index = new HashMap<Integer, HashMap<String,  BitSet>>();
+	public static HashMap<String, HashMap<String, BitSet>> index = null;
 
 	//first block of split N -> first block of split N, second block of split N, third block of split N... 
 	private static HashMap<Long, HashMap<Integer, Long>> block2split = new HashMap<Long,  HashMap<Integer, Long>>();
+
 	private static HashMap<Integer, HashMap<Long, Integer>> blockId2BlockNr = new HashMap<Integer, HashMap<Long, Integer>>();
 	private static HashMap<Integer, Integer> blockCnt = new HashMap<Integer, Integer>();
+
+	private static HashMap<Integer, ArrayList<String>> attrNr2Files = new HashMap<Integer, ArrayList<String>>();
 
 	public static BlockingQueue<xBlockQueueItem> queue = new LinkedBlockingQueue<xBlockQueueItem>(200);
 	static Thread indexBuilder = null;
 
+	private static Long blockIdOfFirstBlock;
 	public static int nBlocks = 0;
+
+	private static String indexDir = getIndexDir();
+
+	private static HashMap<Integer, String> previousFilters = new HashMap<Integer, String>();
+	private static HashMap<Integer, BitSet> previousRelBlocks = null;
 
 	public static class IndexBuilder implements Runnable {
 
 		@Override
 		public void run() {
 			while(true) {
-				synchronized(index) {
-					try {
-						xBlockQueueItem item = queue.take();
+				try {
+					xBlockQueueItem item = queue.take();
 
-						ByteArrayOutputStream compressedData = item.data;
-						long blockId =item.blockId;
-						Long blockIdL = new Long(blockId);
-						boolean first = item.first;
-						Integer columnNr = new Integer(item.columnNr);
-						xLog.print("Going to add columnNr " + columnNr.intValue() + " to index");
+					ByteArrayOutputStream compressedData = item.data;
+					long blockId =item.blockId;
+					Long blockIdL = new Long(blockId);
+					boolean first = item.first;
+					Integer columnNr = new Integer(item.columnNr);
+					xLog.print("Going to add columnNr " + columnNr.intValue() + " to index");
 
-						int blocknr = updateBlockMap(blockIdL, columnNr);
+					openIndexFiles(columnNr);
 
-						ByteArrayOutputStream decompressedData = decompressData(compressedData);
+					int blocknr = updateBlockMap(blockIdL, columnNr);
 
-						initializeIndexForCurrentColumn(columnNr);
-						if(first) {
-							block2split.put(blockIdL, new HashMap<Integer, Long>());
-							blockIdOfFirstBlock = blockIdL;
-							nBlocks++;
-						}
+					ByteArrayOutputStream decompressedData = decompressData(compressedData);
 
-						ByteArrayInputStream bais = new ByteArrayInputStream(decompressedData.toByteArray());
-						BufferedReader br = new BufferedReader(new InputStreamReader(bais, Charset.forName("UTF-8")));
-
-						String entry = "";
-						while((entry = br.readLine()) != null) {
-							String newEntry = new String(entry);
-							addEntriesToIndex(newEntry, blocknr, columnNr);
-						}
-
-						HashMap<Integer, Long> split = block2split.get(blockIdOfFirstBlock);
-						split.put(columnNr, blockIdL);
-
-						xLog.print("Added columnNr " + columnNr.intValue() + " to index");
-						if(nBlocks == 4  && columnNr.intValue() == 1) {
-							//printIndexSize();
-							//removeIndexEntriesWithMoreThan(14);
-							printIndexSize();
-						}
+					if(first) {
+						block2split.put(blockIdL, new HashMap<Integer, Long>());
+						blockIdOfFirstBlock = blockIdL;
+						nBlocks++;
 					}
-					catch (Exception e) {
-						e.printStackTrace();
+
+					ByteArrayInputStream bais = new ByteArrayInputStream(decompressedData.toByteArray());
+					BufferedReader br = new BufferedReader(new InputStreamReader(bais, Charset.forName("UTF-8")));
+
+					String entry = "";
+					while((entry = br.readLine()) != null) {
+						String newEntry = new String(entry);
+						addEntriesToIndex(newEntry, blocknr);
 					}
+
+					HashMap<Integer, Long> split = block2split.get(blockIdOfFirstBlock);
+					split.put(columnNr, blockIdL);
+					xLog.print("Added columnNr " + columnNr.intValue() + " to index");
+
+					closeIndexFiles(columnNr);
+				}
+				catch (Exception e) {
+					e.printStackTrace();
 				}
 			}
 		}
@@ -113,6 +116,74 @@ public class xIndexUtils {
 		}
 		attrMap.put(blockIdL, blockCnt4ColumnNr);
 		return blockCnt4ColumnNr.intValue();
+	}
+
+	private static String getIndexDir() {
+		try {
+			if(!(InetAddress.getLocalHost().getHostName().contains("manuel"))) {
+				return "/mnt/";
+			}
+			else {
+				return "/home/manuelgf/indexDir/";
+			}
+		} catch (UnknownHostException e) {
+			e.printStackTrace();
+		}
+		return "indexDir";
+	}
+
+	public static void closeIndexFiles(Integer columnNr) {
+		ArrayList<String> filesList = new ArrayList<String>();
+		FileOutputStream fout;
+		DataOutputStream dos;
+		ObjectOutputStream oos;
+		try {
+			for(String hash : index.keySet()) {
+				HashMap<String, BitSet> attrIndex = index.get(hash);
+				filesList.add(hash + "-" + columnNr);
+				fout = new FileOutputStream(indexDir + hash + "-" + columnNr + ".index");
+				dos = new DataOutputStream(fout);
+				oos = new ObjectOutputStream(dos);
+				oos.writeObject(attrIndex);
+				oos.flush();
+				oos.close();
+			}
+		} catch(Exception e) {
+			e.printStackTrace();
+		}
+		attrNr2Files.put(columnNr, filesList);
+		index = new HashMap<String, HashMap<String,BitSet>>();
+	}
+
+	public static void openIndexFiles(Integer columnNr) {
+		if(index == null) {
+			removeAllPreviousIndexFiles();
+			index = new HashMap<String, HashMap<String,BitSet>>();
+		}
+		ArrayList<String> filesList = attrNr2Files.get(columnNr);
+		if(filesList == null) {
+			return;
+		}
+		FileInputStream fin;
+		ObjectInputStream ois;
+		try {
+			for (String file : filesList) {
+				fin = new FileInputStream(indexDir + file + ".index");
+				ois = new ObjectInputStream(fin);
+				HashMap<String, BitSet> attrIndex = (HashMap<String, BitSet>) ois.readObject();
+				index.put(file.split("-")[0], attrIndex);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	private static void removeAllPreviousIndexFiles() {
+		try {
+			FileUtils.cleanDirectory(new File(indexDir));
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 	public static void initializeIndexBuilderThread() {
@@ -140,21 +211,24 @@ public class xIndexUtils {
 		}
 	}*/
 
-	private static void initializeIndexForCurrentColumn(Integer columnNr) {
-		if(!index.containsKey(columnNr)) {
-			HashMap<String,  BitSet> currentColumnIndex = new HashMap<String,  BitSet>();
-			index.put(columnNr, currentColumnIndex);
-		}
-	}
+	private static void addEntriesToIndex(String entry, int blocknr) {
+		try {
+			String hash = String.format("%x", new BigInteger(1, entry.getBytes("UTF-8"))).substring(0,2);
 
-	private static void addEntriesToIndex(String hash, int blocknr, Integer columnNr) {
-		HashMap<String,  BitSet> currentColumnIndex = index.get(columnNr);
-		BitSet blocksForEntry = currentColumnIndex.get(hash);
-		if(blocksForEntry == null) {
-			blocksForEntry = new  BitSet(28);
-			currentColumnIndex.put(hash, blocksForEntry);
+			HashMap<String,  BitSet> currentColumnIndex = index.get(hash);
+			if(currentColumnIndex == null) {
+				currentColumnIndex = new HashMap<String, BitSet>();
+				index.put(hash, currentColumnIndex);
+			}
+			BitSet blocksForEntry = currentColumnIndex.get(entry);
+			if(blocksForEntry == null) {
+				blocksForEntry = new  BitSet(28);
+				currentColumnIndex.put(entry, blocksForEntry);
+			}
+			blocksForEntry.set(blocknr);
+		} catch(Exception e) {
+			e.printStackTrace();
 		}
-		blocksForEntry.set(blocknr);
 	}
 
 	public static ByteArrayOutputStream decompressData(ByteArrayOutputStream compressedData) throws IOException {
@@ -177,35 +251,70 @@ public class xIndexUtils {
 	//-1=irrelevant, 1=relevant, 0=non_local_block
 	public static int checkIfRelevantRowGroup(HashMap<Integer, String> filters, long blockId) {
 		xLog.print("xIndexUtils: Going to check if row group " + blockId + " is relevant");
+
+		HashMap<Integer, BitSet> relevantBlocksForJob = null;
+		HashMap<Integer, Long> split = (HashMap<Integer, Long>) block2split.get(new Long(blockId));
+
+		if(checkSameJob(previousFilters, filters) == true) {
+			relevantBlocksForJob = previousRelBlocks;
+		} else {
+			previousFilters = filters;
+			relevantBlocksForJob = new HashMap<Integer, BitSet>();
+
+			for(Integer attrNr : filters.keySet()) {
+				try{
+					openIndexFiles(attrNr);
+					String filter = filters.get(attrNr);
+					String filterHash = String.format("%x", new BigInteger(1, filter.getBytes("UTF-8"))).substring(0,2);
+					BitSet relevantBlocksForThisFilter = index.get(filterHash).get(filter);
+					relevantBlocksForJob.put(attrNr, relevantBlocksForThisFilter);
+				} catch(Exception e) {
+					e.printStackTrace();
+				}
+			}
+			previousRelBlocks = relevantBlocksForJob;
+		}
+
+
 		if(filters.size() == 0) {
 			xLog.print("xIndexUtils: There are no filters. Block is relevant");
 			return 1;
 		}
-
-		HashMap<Integer, Long> split = (HashMap<Integer, Long>) block2split.get(new Long(blockId));
-
 		if(split == null) {
 			xLog.print("xIndexUtils: Reading a non-local row group: " + blockId);
 			return 0;
 		}
-
 		for(Integer attrNr : filters.keySet()) {
-			String predicate = filters.get(attrNr);
 			Long blockIdOfAttrNr = split.get(attrNr);
 			Integer blocknr = blockId2BlockNr.get(attrNr).get(blockIdOfAttrNr);
-
-			BitSet relevantBlocks = index.get(attrNr).get(predicate);
+			BitSet relevantBlocks = relevantBlocksForJob.get(attrNr);
 
 			if((relevantBlocks == null) || (relevantBlocks.get(blocknr.intValue()) == false )) {
 				xLog.print("xIndexUtils: The row group " + blockId + " is irrelevant");
 				return -1;
 			}
 		}
+
 		xLog.print("xIndexUtils: The row group " + blockId + " is relevant");
 		return 1;
 	}
 
-	public static void printIndexSize() {
+	public static boolean checkSameJob(HashMap<Integer, String> filters1, HashMap<Integer, String> filters2){
+		if(filters1.size() != filters2.size()) {
+			return false;
+		}
+		for(Integer attr1 : filters1.keySet()) {
+			String filter1 = filters1.get(attr1);
+			String filter2 = filters2.get(attr1);
+			if(!filter1.equals(filter2)) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	/*public static int calcIndexSize() {
+		int size = 0;
 		System.out.println("[i1] # Attributes: " + index.size());
 		long startTime = System.currentTimeMillis();
 		FileOutputStream fout;
@@ -224,12 +333,6 @@ public class xIndexUtils {
 				HashMap<String,  BitSet> attrIndex = index.get(attr);
 				System.out.println("[i1] attribute " + attr.intValue() + " has " + attrIndex.size() + " entries");
 				int i = 0;
-				/*for (String entry : attrIndex.keySet()) {
-					ArrayList<Long> blockList = attrIndex.get(entry);
-					System.out.println("[i1] " + attr + "_s" + i + ": " +  blockList.size());
-					System.out.println("[i1] !!!" + entry + " !!!SIZE:" + blockList.size() + "!!!");
-					i++;
-				}*/
 				fout = new FileOutputStream("index.obj");
 				dos = new DataOutputStream(fout);
 				oos = new ObjectOutputStream(dos);
@@ -243,7 +346,7 @@ public class xIndexUtils {
 		}
 		long end = System.currentTimeMillis();
 		System.out.println("[i1] time to measure index size: " + (end-startTime) + "milliseconds");
-	}
+	}*/
 
 	public static HashMap<Integer, String> buildFiltersMap(Configuration job) {
 		HashMap<Integer, String> filtersMap = new HashMap<Integer, String>();
