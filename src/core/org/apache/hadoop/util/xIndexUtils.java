@@ -120,11 +120,11 @@ public class xIndexUtils {
 
 	private static String getIndexDir() {
 		try {
-			if(!(InetAddress.getLocalHost().getHostName().contains("manuel"))) {
-				return "/mnt/";
+			if(InetAddress.getLocalHost().getHostName().contains("manuel")) {
+				return "/home/manuelgf/indexDir/";
 			}
 			else {
-				return "/home/manuelgf/indexDir/";
+				return "/mnt/indexDir/";
 			}
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
