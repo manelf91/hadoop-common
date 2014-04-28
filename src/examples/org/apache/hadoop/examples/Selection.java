@@ -85,16 +85,13 @@ public class Selection extends Configured implements Tool {
 		}
 
 	    private final static IntWritable one = new IntWritable(1);
-	    private Text word = new Text();
 
 		public void map(LongWritable key, Text value, 
 				OutputCollector<Text, IntWritable> output, 
 				Reporter reporter) throws IOException {
 			String line = value.toString();
 
-			word.set(line);
-
-			String[] args = word.toString().split(";;;");
+			String[] args = line.split(";\\$;#;");
 			for (Map.Entry<Integer,String> entry : filtersMap.entrySet()) {
 				int attrNr = entry.getKey().intValue();
 				String filter = entry.getValue();
@@ -103,7 +100,7 @@ public class Selection extends Configured implements Tool {
 					return;
 				}
 			}
-			output.collect(word, one);
+			output.collect(new Text(args[0]), one);
 		}
 	}
 
