@@ -268,7 +268,7 @@ public class xIndexUtils {
 		HashMap<Integer, BitSet> relevantBlocksForJob = null;
 		HashMap<Integer, Long> split = (HashMap<Integer, Long>) block2split.get(new Long(blockId));
 
-		if(checkSameJob(previousFilters, filters) == true) {
+		if(previousRelBlocks != null && checkSameJob(previousFilters, filters) == true) {
 			relevantBlocksForJob = previousRelBlocks;
 		} else {
 			previousFilters = filters;

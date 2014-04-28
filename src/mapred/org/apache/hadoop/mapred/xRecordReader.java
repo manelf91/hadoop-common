@@ -72,8 +72,6 @@ public class xRecordReader implements RecordReader<LongWritable, Text> {
 	private xFileSplit split;
 	private Configuration job;
 
-	int line = -1;
-
 	/**
 	 * A class that provides a line reader from an input stream.
 	 * @deprecated Use {@link org.apache.hadoop.util.LineReader} instead.
@@ -274,7 +272,6 @@ public class xRecordReader implements RecordReader<LongWritable, Text> {
 				if(relevantBlock == -1) {
 					break;
 				}
-				line++;
 				key.set(pos);
 
 				int newSize = in.readLine(value, maxLineLength, Math.max(maxBytesToConsume(pos), maxLineLength));

@@ -21,16 +21,15 @@ package org.apache.hadoop.examples;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.FileInputFormat;
@@ -40,11 +39,10 @@ import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.MapReduceBase;
 import org.apache.hadoop.mapred.Mapper;
 import org.apache.hadoop.mapred.OutputCollector;
+import org.apache.hadoop.mapred.Reducer;
 import org.apache.hadoop.mapred.Reporter;
 import org.apache.hadoop.mapred.lib.MultipleTextOutputFormat;
 import org.apache.hadoop.mapred.lib.xInputFormat;
-import org.apache.hadoop.mapreduce.Reducer;
-import org.apache.hadoop.mapreduce.lib.output.MultipleOutputs;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 
@@ -68,6 +66,19 @@ public class Sort2 extends Configured implements Tool {
 	implements Mapper<LongWritable, Text, Text, Text> {
 
 		private Text word = new Text();
+		String node =  "";
+		int threadn = -1;
+		
+		public void configure(JobConf job) {        
+			try {
+				node = InetAddress.getLocalHost().getHostName();
+			} catch (UnknownHostException e) {
+				System.out.println(e.getMessage());
+				e.printStackTrace();
+			}
+		}
+
+		
 
 		public void map(LongWritable key, Text value, 
 				OutputCollector<Text, Text> output, 
@@ -75,23 +86,29 @@ public class Sort2 extends Configured implements Tool {
 			String line = value.toString();
 
 			String keyS = line.substring(0, line.indexOf(";$;#;"));
-
-			word.set("node1");
-			output.collect(word, new Text(line));
+			String valueS = line.substring(line.indexOf(";$;#;"));
+			
+			threadn = (threadn + 1) % 2;
+			word.set(node+threadn+";"+keyS);
+			output.collect(word, new Text(valueS));
 		}
 	}
 
 	/**
 	 * A reducer class that just emits the sum of the input values.
 	 */
-	public static class Reduce extends Reducer<Text, Text, Text, Text> {
+	public static class Reduce extends MapReduceBase
+	implements Reducer<Text, Text, Text, Text> {
 		public void reduce(Text key, Iterator<Text> values, OutputCollector<Text, Text> output, 
 				Reporter reporter) throws IOException {
 
 
 			while (values.hasNext()) {
 				String valueS = values.next().toString();
-				output.collect(new Text(valueS), new Text(""));
+				System.out.println("A");
+				System.out.println("key: " + key.toString());
+				System.out.println("value:" + valueS);
+				output.collect(key, new Text(valueS));
 			}
 		}
 	}
@@ -100,13 +117,8 @@ public class Sort2 extends Configured implements Tool {
 	static class NodeNameBasedMultipleTextOutputFormat extends MultipleTextOutputFormat<Text, Text> {
 		@Override
 		protected String generateFileNameForKeyValue(Text key, Text value, String name) {
-			String nodename = key.toString();
-			
-			System.out.println("key" + key.toString());
-			System.out.println("value" + value.toString());
-			System.out.println("name" + name);
-			
-			
+			String keyS = key.toString();
+			String nodename = keyS.substring(0, keyS.indexOf(";"));
 			return nodename + "/" + name;
 		}
 	}
@@ -130,7 +142,7 @@ public class Sort2 extends Configured implements Tool {
 		/*mgferreira*/
 		String jobName = args[0];
 
-		conf.setInt("mapred.tasktracker.map.tasks.maximum", 1);
+		conf.setInt("mapred.tasktracker.map.tasks.maximum", 5);
 		conf.setIfUnset("useIndexes", "false");
 		conf.setBooleanIfUnset("equal.splits", true);
 		conf.setIfUnset("blocks.per.split", "1");
@@ -180,6 +192,7 @@ public class Sort2 extends Configured implements Tool {
 		conf.setOutputValueClass(Text.class);
 
 		conf.setMapperClass(MapClass.class);
+		conf.setReducerClass(Reduce.class);
 		conf.setOutputFormat(NodeNameBasedMultipleTextOutputFormat.class);
 		conf.setInputFormat(xInputFormat.class);
 
