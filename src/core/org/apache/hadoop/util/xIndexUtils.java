@@ -25,6 +25,8 @@ import java.util.zip.GZIPInputStream;
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
 
+import org.apache.hadoop.util.StatisticsAgregator;
+
 public class xIndexUtils {
 
 	// <attribute nr, <attribute value, blockId>>
@@ -49,6 +51,13 @@ public class xIndexUtils {
 	private static HashMap<Integer, String> previousFilters = new HashMap<Integer, String>();
 	private static HashMap<Integer, BitSet> previousRelBlocks = null;
 
+	private static int indexSize = -1;
+	
+	static {
+		Object obj = new xIndexUtils();
+		StatisticsAgregator.getInstance().register(obj);
+	}
+	
 	public static class IndexBuilder implements Runnable {
 
 		@Override
@@ -313,6 +322,22 @@ public class xIndexUtils {
 		return true;
 	}
 
+	public static int getIndexSize() {
+		if (indexSize == -1) {
+			indexSize = calcIndexSize();
+		}
+		return indexSize;
+	}
+	
+	public static int calcIndexSize(){
+		return 0;
+	}
+	
+	@StatisticsAnotation
+	public static String getIndexStatistics(){
+		return "index size:"+getIndexSize();
+	}
+	
 	/*public static int calcIndexSize() {
 		int size = 0;
 		System.out.println("[i1] # Attributes: " + index.size());

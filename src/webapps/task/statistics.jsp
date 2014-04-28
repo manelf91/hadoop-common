@@ -54,29 +54,31 @@
 <body>
 	<%
 		out.println("<h1>" + trackerName + " Statistics</h1>");
-		NewMapTaskStatistics mps = new NewMapTaskStatistics();
 		StringBuilder xmlBuilder = new StringBuilder();
 		xmlBuilder.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
 		xmlBuilder.append("<Tracker name=\"" + trackerName + "\">\n");
 		xmlBuilder.append("<Statistics>\n");
 		out.print("<div style=\"padding-left:40px\">\n");
-		out.print("<div style=\"padding-left:40px;width:400px;background-color:#00FFFF\">\nIndex Statistic Details\n</div>\n");
+		out.print("<div style=\"padding-left:40px;width:400px;background-color:#00FFFF\">\nDetails\n</div>\n");
 		out.print("<table class=\"table table-striped\" style=\"max-width:400px\">\n");
-		java.lang.reflect.Method[] methods = mps.getClass().getMethods();
-		for (java.lang.reflect.Method meth : methods) {
-			Statistics annos = meth.getAnnotation(Statistics.class);
-			if (annos != null) {
-				try {
-					String line = (String) meth.invoke(mps);
-					String[] keyValPair = line.split(":");
-					out.print("<tr>\n<td>\n" + keyValPair[0]
-							+ "\n</td>\n<td>\n" + keyValPair[1]
-							+ "\n</td>\n</tr>\n");
-					keyValPair[0] = keyValPair[0].replaceAll("\\s+", "");
-					xmlBuilder.append("<" + keyValPair[0] + ">"
-							+ keyValPair[1] + "</" + keyValPair[0] + ">\n");
-				} catch (Exception ex) {
-					out.print(ex.getMessage());
+		StatisticsAgregator agregator = StatisticsAgregator.getInstance();
+		for(Object obj :agregator.getRegisteredObjs()){
+			java.lang.reflect.Method[] methods = obj.getClass().getMethods();
+			for (java.lang.reflect.Method meth : methods) {
+	            StatisticsAnotation annos = meth.getAnnotation(StatisticsAnotation.class);
+				if (annos != null) {
+					try {
+						String line = (String) meth.invoke(obj);
+						String[] keyValPair = line.split(":");
+						out.print("<tr>\n<td>\n" + keyValPair[0]
+								+ "\n</td>\n<td>\n" + keyValPair[1]
+								+ "\n</td>\n</tr>\n");
+						keyValPair[0] = keyValPair[0].replaceAll("\\s+", "");
+						xmlBuilder.append("<" + keyValPair[0] + ">"
+								+ keyValPair[1] + "</" + keyValPair[0] + ">\n");
+					} catch (Exception ex) {
+						out.print(ex.getMessage());
+					}
 				}
 			}
 		}
