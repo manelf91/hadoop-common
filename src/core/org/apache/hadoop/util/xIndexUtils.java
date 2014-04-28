@@ -25,8 +25,6 @@ import java.util.zip.GZIPInputStream;
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
 
-import org.apache.hadoop.util.StatisticsAgregator;
-
 public class xIndexUtils {
 
 	// <attribute nr, <attribute value, blockId>>
@@ -102,6 +100,7 @@ public class xIndexUtils {
 				}
 				catch (Exception e) {
 					e.printStackTrace();
+					System.out.println(e.getMessage());
 				}
 			}
 		}
@@ -137,8 +136,9 @@ public class xIndexUtils {
 			}
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
+			System.out.println(e.getMessage());
 		}
-		return "indexDir";
+		return "/mnt/indexDir";
 	}
 
 	public static void closeIndexFiles(Integer columnNr) {
@@ -159,6 +159,7 @@ public class xIndexUtils {
 			}
 		} catch(Exception e) {
 			e.printStackTrace();
+			System.out.println(e.getMessage());
 		}
 		attrNr2Files.put(columnNr, filesList);
 		index = new HashMap<String, HashMap<String,BitSet>>();
@@ -184,6 +185,7 @@ public class xIndexUtils {
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
+			System.out.println(e.getMessage());
 		}
 	}
 
@@ -192,6 +194,7 @@ public class xIndexUtils {
 			FileUtils.cleanDirectory(new File(indexDir));
 		} catch (IOException e) {
 			e.printStackTrace();
+			System.out.println(e.getMessage());
 		}
 	}
 
@@ -237,6 +240,7 @@ public class xIndexUtils {
 			blocksForEntry.set(blocknr);
 		} catch(Exception e) {
 			e.printStackTrace();
+			System.out.println(e.getMessage());
 		}
 	}
 
@@ -279,6 +283,7 @@ public class xIndexUtils {
 					relevantBlocksForJob.put(attrNr, relevantBlocksForThisFilter);
 				} catch(Exception e) {
 					e.printStackTrace();
+					System.out.println(e.getMessage());
 				}
 			}
 			previousRelBlocks = relevantBlocksForJob;

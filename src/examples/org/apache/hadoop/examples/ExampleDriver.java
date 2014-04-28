@@ -73,6 +73,7 @@ public class ExampleDriver {
       pgd.addClass("randomtextwriter", RandomTextWriter.class, 
       "A map/reduce program that writes 10GB of random textual data per node.");
       pgd.addClass("sort", Sort.class, "A map/reduce program that sorts the data written by the random writer.");
+      pgd.addClass("sort2", Sort2.class, "A map/reduce program that sorts the data written by the random writer.");
       pgd.addClass("pi", PiEstimator.class, "A map/reduce program that estimates Pi using monte-carlo method.");
       pgd.addClass("pentomino", DistributedPentomino.class,
       "A map/reduce tile laying program to find solutions to pentomino problems.");

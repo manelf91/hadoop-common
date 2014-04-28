@@ -40,9 +40,11 @@ import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.MapReduceBase;
 import org.apache.hadoop.mapred.Mapper;
 import org.apache.hadoop.mapred.OutputCollector;
-import org.apache.hadoop.mapred.Reducer;
 import org.apache.hadoop.mapred.Reporter;
+import org.apache.hadoop.mapred.lib.MultipleTextOutputFormat;
 import org.apache.hadoop.mapred.lib.xInputFormat;
+import org.apache.hadoop.mapreduce.Reducer;
+import org.apache.hadoop.mapreduce.lib.output.MultipleOutputs;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 
@@ -55,7 +57,7 @@ import org.apache.hadoop.util.ToolRunner;
  * To run: bin/hadoop jar build/hadoop-examples.jar wordcount
  *            [-m <i>maps</i>] [-r <i>reduces</i>] <i>in-dir</i> <i>out-dir</i> 
  */
-public class Sort extends Configured implements Tool {
+public class Sort2 extends Configured implements Tool {
 
 	/**
 	 * Counts the words in each line.
@@ -65,8 +67,6 @@ public class Sort extends Configured implements Tool {
 	public static class MapClass extends MapReduceBase
 	implements Mapper<LongWritable, Text, Text, Text> {
 
-
-		private final static IntWritable one = new IntWritable(1);
 		private Text word = new Text();
 
 		public void map(LongWritable key, Text value, 
@@ -76,7 +76,7 @@ public class Sort extends Configured implements Tool {
 
 			String keyS = line.substring(0, line.indexOf(";$;#;"));
 
-			word.set(keyS);
+			word.set("node1");
 			output.collect(word, new Text(line));
 		}
 	}
@@ -84,18 +84,33 @@ public class Sort extends Configured implements Tool {
 	/**
 	 * A reducer class that just emits the sum of the input values.
 	 */
-	public static class Reduce extends MapReduceBase
-	implements Reducer<Text, Text, Text, Text> {
-
-		public void reduce(Text key, Iterator<Text> values,
-				OutputCollector<Text, Text> output, 
+	public static class Reduce extends Reducer<Text, Text, Text, Text> {
+		public void reduce(Text key, Iterator<Text> values, OutputCollector<Text, Text> output, 
 				Reporter reporter) throws IOException {
+
+
 			while (values.hasNext()) {
 				String valueS = values.next().toString();
 				output.collect(new Text(valueS), new Text(""));
 			}
 		}
 	}
+
+
+	static class NodeNameBasedMultipleTextOutputFormat extends MultipleTextOutputFormat<Text, Text> {
+		@Override
+		protected String generateFileNameForKeyValue(Text key, Text value, String name) {
+			String nodename = key.toString();
+			
+			System.out.println("key" + key.toString());
+			System.out.println("value" + value.toString());
+			System.out.println("name" + name);
+			
+			
+			return nodename + "/" + name;
+		}
+	}
+
 
 	static int printUsage() {
 		System.out.println("wordcount [-m <maps>] [-r <reduces>] <input> <output>");
@@ -110,7 +125,7 @@ public class Sort extends Configured implements Tool {
 	 *                     job tracker.
 	 */
 	public int run(String[] args) throws Exception {
-		JobConf conf = new JobConf(getConf(), Sort.class);
+		JobConf conf = new JobConf(getConf(), Sort2.class);
 
 		/*mgferreira*/
 		String jobName = args[0];
@@ -119,7 +134,7 @@ public class Sort extends Configured implements Tool {
 		conf.setIfUnset("useIndexes", "false");
 		conf.setBooleanIfUnset("equal.splits", true);
 		conf.setIfUnset("blocks.per.split", "1");
-		
+
 		String relevantAttrs = "";
 		String filteredAttrs = "";
 
@@ -165,7 +180,7 @@ public class Sort extends Configured implements Tool {
 		conf.setOutputValueClass(Text.class);
 
 		conf.setMapperClass(MapClass.class);
-		conf.setReducerClass(Reduce.class);
+		conf.setOutputFormat(NodeNameBasedMultipleTextOutputFormat.class);
 		conf.setInputFormat(xInputFormat.class);
 
 		List<String> other_args = new ArrayList<String>();
@@ -202,7 +217,7 @@ public class Sort extends Configured implements Tool {
 
 
 	public static void main(String[] args) throws Exception {
-		int res = ToolRunner.run(new Configuration(), new Sort(), args);
+		int res = ToolRunner.run(new Configuration(), new Sort2(), args);
 		System.exit(res);
 	}
 
