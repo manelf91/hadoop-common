@@ -84,20 +84,13 @@ public class SelectionSent extends Configured implements Tool {
 			}
 		}
 
-		private Text word = new Text();
-
-		public void map(LongWritable key, Text value, 
-				OutputCollector<Text, Text> output, 
-				Reporter reporter) throws IOException {
+		public void map(LongWritable key, Text value, OutputCollector<Text, Text> output, Reporter reporter) throws IOException {
 			String line = value.toString();
-			
-			String keyS = line.substring(0, line.indexOf(";$;#;"));
 
-			String[] args = line.split(";$;#;");
+			String[] args = line.split(";\\$;#;");
 			for (Map.Entry<Integer,String> entry : filtersMap.entrySet()) {
 				int attrNr = entry.getKey().intValue();
 				String filter = entry.getValue();
-
 				if (!args[attrNr].equals(filter)) {
 					return;
 				}
