@@ -225,7 +225,10 @@ public class xIndexUtils {
 
 	private static void addEntriesToIndex(String entry, int blocknr) {
 		try {
-			String hash = String.format("%x", new BigInteger(1, entry.getBytes("UTF-8"))).substring(0,2);
+			System.out.println("entry:" + entry);
+			String location = entry.substring(entry.indexOf(":")+1);
+			System.out.println("location:" + location);
+			String hash = String.format("%x", new BigInteger(1, location.getBytes("UTF-8"))).substring(0,2);
 
 			HashMap<String,  BitSet> currentColumnIndex = index.get(hash);
 			if(currentColumnIndex == null) {
@@ -278,7 +281,8 @@ public class xIndexUtils {
 				try{
 					openIndexFiles(attrNr);
 					String filter = filters.get(attrNr);
-					String filterHash = String.format("%x", new BigInteger(1, filter.getBytes("UTF-8"))).substring(0,2);
+					String location = filter.substring(filter.indexOf(":")+1);
+					String filterHash = String.format("%x", new BigInteger(1, location.getBytes("UTF-8"))).substring(0,2);
 					BitSet relevantBlocksForThisFilter = index.get(filterHash).get(filter);
 					relevantBlocksForJob.put(attrNr, relevantBlocksForThisFilter);
 				} catch(Exception e) {
