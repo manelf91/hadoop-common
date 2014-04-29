@@ -225,11 +225,11 @@ public class xIndexUtils {
 
 	private static void addEntriesToIndex(String entry, int blocknr) {
 		try {
-			System.out.println("entry:" + entry);
 			String location = entry.substring(entry.indexOf(":")+1);
-			System.out.println("location:" + location);
-			String hash = String.format("%x", new BigInteger(1, location.getBytes("UTF-8"))).substring(0,2);
-
+			String hash = "";
+			if(location.length() >= 2) {
+				hash = String.format("%x", new BigInteger(1, location.getBytes("UTF-8"))).substring(0,2);
+			}
 			HashMap<String,  BitSet> currentColumnIndex = index.get(hash);
 			if(currentColumnIndex == null) {
 				currentColumnIndex = new HashMap<String, BitSet>();
@@ -243,6 +243,7 @@ public class xIndexUtils {
 			blocksForEntry.set(blocknr);
 		} catch(Exception e) {
 			e.printStackTrace();
+			System.out.println("entry: " + entry);
 			System.out.println(e.getMessage());
 		}
 	}
@@ -393,8 +394,6 @@ public class xIndexUtils {
 			for (String filteredAttr : filtersByAttr) {
 				String body = job.get("filter" + filteredAttr);
 				String filter = body.substring(body.indexOf(" ")+1);
-
-				System.out.println("xIndexUtils: " + filteredAttr+": " + filter);
 
 				filtersMap.put(new Integer(filteredAttr), filter);
 			}

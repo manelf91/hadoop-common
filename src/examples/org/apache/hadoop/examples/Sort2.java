@@ -105,9 +105,6 @@ public class Sort2 extends Configured implements Tool {
 
 			while (values.hasNext()) {
 				String valueS = values.next().toString();
-				System.out.println("A");
-				System.out.println("key: " + key.toString());
-				System.out.println("value:" + valueS);
 				output.collect(key, new Text(valueS));
 			}
 		}
