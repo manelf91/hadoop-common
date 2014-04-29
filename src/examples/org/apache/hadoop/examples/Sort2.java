@@ -66,19 +66,7 @@ public class Sort2 extends Configured implements Tool {
 	implements Mapper<LongWritable, Text, Text, Text> {
 
 		private Text word = new Text();
-		String node =  "";
 		int threadn = -1;
-		
-		public void configure(JobConf job) {        
-			try {
-				node = InetAddress.getLocalHost().getHostName();
-			} catch (UnknownHostException e) {
-				System.out.println(e.getMessage());
-				e.printStackTrace();
-			}
-		}
-
-		
 
 		public void map(LongWritable key, Text value, 
 				OutputCollector<Text, Text> output, 
@@ -86,10 +74,11 @@ public class Sort2 extends Configured implements Tool {
 			String line = value.toString();
 
 			String keyS = line.substring(0, line.indexOf(";$;#;"));
-			String valueS = line.substring(line.indexOf(";$;#;"));
-			
+			String valueS = line.substring(line.indexOf(",")+1);
+			String node = line.substring(0, line.indexOf(","));
+
 			threadn = (threadn + 1) % 2;
-			word.set(node+threadn+";"+keyS);
+			word.set(node+threadn);
 			output.collect(word, new Text(valueS));
 		}
 	}
@@ -115,8 +104,7 @@ public class Sort2 extends Configured implements Tool {
 		@Override
 		protected String generateFileNameForKeyValue(Text key, Text value, String name) {
 			String keyS = key.toString();
-			String nodename = keyS.substring(0, keyS.indexOf(";"));
-			return nodename + "/" + name;
+			return keyS + "/" + "part-00000";
 		}
 	}
 
@@ -139,7 +127,7 @@ public class Sort2 extends Configured implements Tool {
 		/*mgferreira*/
 		String jobName = args[0];
 
-		conf.setInt("mapred.tasktracker.map.tasks.maximum", 5);
+		conf.setNumReduceTasks(10);
 		conf.setIfUnset("useIndexes", "false");
 		conf.setBooleanIfUnset("equal.splits", true);
 		conf.setIfUnset("blocks.per.split", "1");
@@ -174,6 +162,7 @@ public class Sort2 extends Configured implements Tool {
 		System.out.println("relevantAttrs: " + relevantAttrs);
 		System.out.println("filteredAttrs: " + filteredAttrs);
 		conf.setIfUnset("relevantAttrs", relevantAttrs);
+		conf.set("jobName", "sort");
 		if (!filteredAttrs.equals("")) {
 			conf.setIfUnset("filteredAttrs", filteredAttrs);
 		}

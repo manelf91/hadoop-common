@@ -120,7 +120,7 @@ public class xRecordReader implements RecordReader<LongWritable, Text> {
 
 			start = split.getStart();
 			end = start + split.getLength();
-
+			
 			ArrayList<Path> pathsToBlocksOfRelevantSplit = getPathsToRelevantSplit(split.getPaths().get(currentRowGroupIndex), job);
 			final Path file = pathsToBlocksOfRelevantSplit.remove(0);
 
@@ -295,7 +295,11 @@ public class xRecordReader implements RecordReader<LongWritable, Text> {
 					}
 					i++;
 				}
-				value.set(accumulator.toString());
+				String extra = "";
+				if(job.get("jobName") != null) {
+					extra = split.getLocations()[0] + ",";
+				}
+				value.set(extra + accumulator.toString());
 
 				pos += newSize;
 				if (newSize < maxLineLength) {

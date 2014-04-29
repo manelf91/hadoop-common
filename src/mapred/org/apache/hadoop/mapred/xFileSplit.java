@@ -96,7 +96,8 @@ implements InputSplit {
 		out.writeLong(length);
 		for(Long blockId : blocksIds) {
 			out.writeLong(blockId.longValue());
-		}	
+		}
+		UTF8.writeString(out, hosts[0]);
 	}
 	public void readFields(DataInput in) throws IOException {
 		numberOfFiles = in.readInt();
@@ -108,7 +109,8 @@ implements InputSplit {
 		for(int i = 0; i < numberOfFiles; i++) {
 			blocksIds.add(i, new Long(in.readLong()));
 		}
-		hosts = null;
+		hosts = new String[1];
+		hosts[0] = UTF8.readString(in);
 	}
 
 	public String[] getLocations() throws IOException {
