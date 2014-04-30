@@ -145,11 +145,12 @@ public class SelectionSent extends Configured implements Tool {
 	 *                     job tracker.
 	 */
 	public int run(String[] args) throws Exception {
-		JobConf conf = new JobConf(getConf(), Selection.class);
+		JobConf conf = new JobConf(getConf(), SelectionSent.class);
 
 		/*mgferreira*/
 		String jobName = args[0];
 		conf.setJobName(jobName);
+		conf.set("jobName", jobName);
 
 		String blocksPerSplit = args[1];
 		if(blocksPerSplit.contains("-")) {

@@ -296,7 +296,7 @@ public class xRecordReader implements RecordReader<LongWritable, Text> {
 					i++;
 				}
 				String extra = "";
-				if(job.get("jobName") != null) {
+				if(job.get("jobName").equals("sort")){
 					extra = split.getLocations()[0] + ",";
 				}
 				value.set(extra + accumulator.toString());

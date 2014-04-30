@@ -225,11 +225,8 @@ public class xIndexUtils {
 
 	private static void addEntriesToIndex(String entry, int blocknr) {
 		try {
-			String location = entry.substring(entry.indexOf(":")+1);
-			String hash = "";
-			if(location.length() >= 2) {
-				hash = String.format("%x", new BigInteger(1, location.getBytes("UTF-8"))).substring(0,2);
-			}
+			String hash = toHex(entry.getBytes());
+			System.out.println(hash);
 			HashMap<String,  BitSet> currentColumnIndex = index.get(hash);
 			if(currentColumnIndex == null) {
 				currentColumnIndex = new HashMap<String, BitSet>();
@@ -267,6 +264,10 @@ public class xIndexUtils {
 
 	//-1=irrelevant, 1=relevant, 0=non_local_block
 	public static int checkIfRelevantRowGroup(HashMap<Integer, String> filters, long blockId) {
+		if(filters.size() == 0) {
+			xLog.print("xIndexUtils: There are no filters. Block is relevant");
+			return 1;
+		}
 		synchronized (index) {
 			xLog.print("xIndexUtils: Going to check if row group " + blockId + " is relevant");
 
@@ -283,8 +284,7 @@ public class xIndexUtils {
 					try{
 						openIndexFiles(attrNr);
 						String filter = filters.get(attrNr);
-						String location = filter.substring(filter.indexOf(":")+1);
-						String filterHash = String.format("%x", new BigInteger(1, location.getBytes("UTF-8"))).substring(0,2);
+						String filterHash = toHex(filter.getBytes());
 						BitSet relevantBlocksForThisFilter = index.get(filterHash).get(filter);
 						relevantBlocksForJob.put(attrNr, relevantBlocksForThisFilter);
 					} catch(Exception e) {
@@ -295,11 +295,6 @@ public class xIndexUtils {
 				previousRelBlocks = relevantBlocksForJob;
 			}
 
-
-			if(filters.size() == 0) {
-				xLog.print("xIndexUtils: There are no filters. Block is relevant");
-				return 1;
-			}
 			if(split == null) {
 				xLog.print("xIndexUtils: Reading a non-local row group: " + blockId);
 				return 0;
@@ -401,5 +396,10 @@ public class xIndexUtils {
 			}
 		}
 		return filtersMap;
+	}
+	
+	public static String toHex(byte[] bytes) {
+	    BigInteger bi = new BigInteger(1, bytes);
+	    return String.format("%0" + (bytes.length << 1) + "X", bi);
 	}
 }

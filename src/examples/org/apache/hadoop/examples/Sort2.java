@@ -31,6 +31,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.RawComparator;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.FileInputFormat;
 import org.apache.hadoop.mapred.FileOutputFormat;
@@ -73,12 +74,12 @@ public class Sort2 extends Configured implements Tool {
 				Reporter reporter) throws IOException {
 			String line = value.toString();
 
-			String keyS = line.substring(0, line.indexOf(";$;#;"));
-			String valueS = line.substring(line.indexOf(",")+1);
+			String keyS = line.substring(line.indexOf(","), line.indexOf(";$;#;"));
+			String valueS = line.substring(line.indexOf(";$;#;")+5);
 			String node = line.substring(0, line.indexOf(","));
 
 			threadn = (threadn + 1) % 2;
-			word.set(node+threadn);
+			word.set(node + threadn + keyS);
 			output.collect(word, new Text(valueS));
 		}
 	}
@@ -104,10 +105,26 @@ public class Sort2 extends Configured implements Tool {
 		@Override
 		protected String generateFileNameForKeyValue(Text key, Text value, String name) {
 			String keyS = key.toString();
-			return keyS + "/" + "part-00000";
+			String node = keyS.substring(0, keyS.indexOf(","));
+			System.out.println("key:" + keyS);
+			System.out.println("node:" + node);
+			return node + "/" + "part-00000";
 		}
 	}
 
+	static class MyComparatorClass implements RawComparator<Text>{
+		@Override
+		public int compare(Text arg0, Text arg1) {
+			// TODO Auto-generated method stub
+			return 0;
+		}
+
+		@Override
+		public int compare(byte[] b1, int s1, int l1, byte[] b2, int s2, int l2) {
+			// TODO Auto-generated method stub
+			return 0;
+		}
+	}
 
 	static int printUsage() {
 		System.out.println("wordcount [-m <maps>] [-r <reduces>] <input> <output>");
@@ -125,7 +142,6 @@ public class Sort2 extends Configured implements Tool {
 		JobConf conf = new JobConf(getConf(), Sort2.class);
 
 		/*mgferreira*/
-		String jobName = args[0];
 
 		conf.setNumReduceTasks(10);
 		conf.setIfUnset("useIndexes", "false");
@@ -181,6 +197,7 @@ public class Sort2 extends Configured implements Tool {
 		conf.setReducerClass(Reduce.class);
 		conf.setOutputFormat(NodeNameBasedMultipleTextOutputFormat.class);
 		conf.setInputFormat(xInputFormat.class);
+		conf.setOutputValueGroupingComparator(MyComparatorClass.class);
 
 		List<String> other_args = new ArrayList<String>();
 		for(int i=0; i < argsN.length; ++i) {
