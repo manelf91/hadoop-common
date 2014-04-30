@@ -136,7 +136,7 @@ public class WordCountMy_ci_1 extends Configured implements Tool {
 		JobConf conf = new JobConf(getConf(), WordCountMy_ci_1.class);
 		String jobName = args[0];
 		conf.setJobName(jobName);
-		conf.set("jobName", jobName);
+		//conf.set("jobName", jobName);
 
 		String blocksPerSplit = args[1];
 		if(blocksPerSplit.contains("-")) {
