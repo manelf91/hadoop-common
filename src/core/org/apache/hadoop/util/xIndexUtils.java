@@ -50,12 +50,12 @@ public class xIndexUtils {
 	private static HashMap<Integer, BitSet> previousRelBlocks = null;
 
 	private static int indexSize = -1;
-	
+
 	static {
 		Object obj = new xIndexUtils();
 		StatisticsAgregator.getInstance().register(obj);
 	}
-	
+
 	public static class IndexBuilder implements Runnable {
 
 		@Override
@@ -267,55 +267,57 @@ public class xIndexUtils {
 
 	//-1=irrelevant, 1=relevant, 0=non_local_block
 	public static int checkIfRelevantRowGroup(HashMap<Integer, String> filters, long blockId) {
-		xLog.print("xIndexUtils: Going to check if row group " + blockId + " is relevant");
+		synchronized (index) {
+			xLog.print("xIndexUtils: Going to check if row group " + blockId + " is relevant");
 
-		HashMap<Integer, BitSet> relevantBlocksForJob = null;
-		HashMap<Integer, Long> split = (HashMap<Integer, Long>) block2split.get(new Long(blockId));
+			HashMap<Integer, BitSet> relevantBlocksForJob = null;
+			HashMap<Integer, Long> split = (HashMap<Integer, Long>) block2split.get(new Long(blockId));
 
-		if(previousRelBlocks != null && checkSameJob(previousFilters, filters) == true) {
-			relevantBlocksForJob = previousRelBlocks;
-		} else {
-			previousFilters = filters;
-			relevantBlocksForJob = new HashMap<Integer, BitSet>();
+			if(previousRelBlocks != null && checkSameJob(previousFilters, filters) == true) {
+				relevantBlocksForJob = previousRelBlocks;
+			} else {
+				previousFilters = filters;
+				relevantBlocksForJob = new HashMap<Integer, BitSet>();
 
+				for(Integer attrNr : filters.keySet()) {
+					try{
+						openIndexFiles(attrNr);
+						String filter = filters.get(attrNr);
+						String location = filter.substring(filter.indexOf(":")+1);
+						String filterHash = String.format("%x", new BigInteger(1, location.getBytes("UTF-8"))).substring(0,2);
+						BitSet relevantBlocksForThisFilter = index.get(filterHash).get(filter);
+						relevantBlocksForJob.put(attrNr, relevantBlocksForThisFilter);
+					} catch(Exception e) {
+						e.printStackTrace();
+						System.out.println(e.getMessage());
+					}
+				}
+				previousRelBlocks = relevantBlocksForJob;
+			}
+
+
+			if(filters.size() == 0) {
+				xLog.print("xIndexUtils: There are no filters. Block is relevant");
+				return 1;
+			}
+			if(split == null) {
+				xLog.print("xIndexUtils: Reading a non-local row group: " + blockId);
+				return 0;
+			}
 			for(Integer attrNr : filters.keySet()) {
-				try{
-					openIndexFiles(attrNr);
-					String filter = filters.get(attrNr);
-					String location = filter.substring(filter.indexOf(":")+1);
-					String filterHash = String.format("%x", new BigInteger(1, location.getBytes("UTF-8"))).substring(0,2);
-					BitSet relevantBlocksForThisFilter = index.get(filterHash).get(filter);
-					relevantBlocksForJob.put(attrNr, relevantBlocksForThisFilter);
-				} catch(Exception e) {
-					e.printStackTrace();
-					System.out.println(e.getMessage());
+				Long blockIdOfAttrNr = split.get(attrNr);
+				Integer blocknr = blockId2BlockNr.get(attrNr).get(blockIdOfAttrNr);
+				BitSet relevantBlocks = relevantBlocksForJob.get(attrNr);
+
+				if((relevantBlocks == null) || (relevantBlocks.get(blocknr.intValue()) == false )) {
+					xLog.print("xIndexUtils: The row group " + blockId + " is irrelevant");
+					return -1;
 				}
 			}
-			previousRelBlocks = relevantBlocksForJob;
-		}
 
-
-		if(filters.size() == 0) {
-			xLog.print("xIndexUtils: There are no filters. Block is relevant");
+			xLog.print("xIndexUtils: The row group " + blockId + " is relevant");
 			return 1;
 		}
-		if(split == null) {
-			xLog.print("xIndexUtils: Reading a non-local row group: " + blockId);
-			return 0;
-		}
-		for(Integer attrNr : filters.keySet()) {
-			Long blockIdOfAttrNr = split.get(attrNr);
-			Integer blocknr = blockId2BlockNr.get(attrNr).get(blockIdOfAttrNr);
-			BitSet relevantBlocks = relevantBlocksForJob.get(attrNr);
-
-			if((relevantBlocks == null) || (relevantBlocks.get(blocknr.intValue()) == false )) {
-				xLog.print("xIndexUtils: The row group " + blockId + " is irrelevant");
-				return -1;
-			}
-		}
-
-		xLog.print("xIndexUtils: The row group " + blockId + " is relevant");
-		return 1;
 	}
 
 	public static boolean checkSameJob(HashMap<Integer, String> filters1, HashMap<Integer, String> filters2){
@@ -338,16 +340,16 @@ public class xIndexUtils {
 		}
 		return indexSize;
 	}
-	
+
 	public static int calcIndexSize(){
 		return 0;
 	}
-	
+
 	@StatisticsAnotation
 	public static String getIndexStatistics(){
 		return "index size:"+getIndexSize();
 	}
-	
+
 	/*public static int calcIndexSize() {
 		int size = 0;
 		System.out.println("[i1] # Attributes: " + index.size());
