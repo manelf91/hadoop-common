@@ -142,7 +142,7 @@ if [ "$JAVA_HOME" = "" ]; then
 fi
 
 JAVA=$JAVA_HOME/bin/java
-JAVA_HEAP_MAX=-Xmx1500m 
+JAVA_HEAP_MAX=-Xmx3000m 
 
 # check envvars which might override default args
 if [ "$HADOOP_HEAPSIZE" != "" ]; then

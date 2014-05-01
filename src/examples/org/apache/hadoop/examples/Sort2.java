@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 
@@ -31,8 +32,8 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
-import org.apache.hadoop.io.RawComparator;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.compress.GzipCodec;
 import org.apache.hadoop.mapred.FileInputFormat;
 import org.apache.hadoop.mapred.FileOutputFormat;
 import org.apache.hadoop.mapred.JobClient;
@@ -42,8 +43,10 @@ import org.apache.hadoop.mapred.Mapper;
 import org.apache.hadoop.mapred.OutputCollector;
 import org.apache.hadoop.mapred.Reducer;
 import org.apache.hadoop.mapred.Reporter;
+import org.apache.hadoop.mapred.TextOutputFormat;
 import org.apache.hadoop.mapred.lib.MultipleTextOutputFormat;
 import org.apache.hadoop.mapred.lib.xInputFormat;
+import org.apache.hadoop.mapred.Partitioner;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 
@@ -77,9 +80,10 @@ public class Sort2 extends Configured implements Tool {
 			String keyS = line.substring(line.indexOf(","), line.indexOf(";$;#;"));
 			String valueS = line.substring(line.indexOf(";$;#;")+5);
 			String node = line.substring(0, line.indexOf(","));
+			String all = line.substring(line.indexOf(",")+1);
 
 			threadn = (threadn + 1) % 2;
-			word.set(node + threadn + keyS);
+			word.set(node + keyS);
 			output.collect(word, new Text(valueS));
 		}
 	}
@@ -92,16 +96,18 @@ public class Sort2 extends Configured implements Tool {
 		public void reduce(Text key, Iterator<Text> values, OutputCollector<Text, Text> output, 
 				Reporter reporter) throws IOException {
 
-
+			System.out.println("begin key" + key.toString());
 			while (values.hasNext()) {
 				String valueS = values.next().toString();
+				System.out.println("value:" + valueS);
 				output.collect(key, new Text(valueS));
 			}
+			System.out.println("end" + key.toString());
 		}
 	}
 
 
-	static class NodeNameBasedMultipleTextOutputFormat extends MultipleTextOutputFormat<Text, Text> {
+	public static class NodeNameBasedMultipleTextOutputFormat extends MultipleTextOutputFormat<Text, Text> {
 		@Override
 		protected String generateFileNameForKeyValue(Text key, Text value, String name) {
 			String keyS = key.toString();
@@ -112,18 +118,32 @@ public class Sort2 extends Configured implements Tool {
 		}
 	}
 
-	static class MyComparatorClass implements RawComparator<Text>{
+	public static class MyPartitioner implements Partitioner<Text, Text> {
+
+		HashMap<String, Integer> partitions = new HashMap<String, Integer>();
+		
+		public MyPartitioner(){}
+		
 		@Override
-		public int compare(Text arg0, Text arg1) {
-			// TODO Auto-generated method stub
-			return 0;
+		public void configure(JobConf job) {
+			String nodes = job.get("nodes");
+			String[] nodeList = nodes.split(",");
+			int i = 0;
+			for(String node : nodeList) {
+				partitions.put(node, new Integer(i));
+				i++;
+			}
+			System.out.println(partitions.toString());
 		}
 
 		@Override
-		public int compare(byte[] b1, int s1, int l1, byte[] b2, int s2, int l2) {
-			// TODO Auto-generated method stub
-			return 0;
+		public int getPartition(Text key, Text value, int numPartitions) {
+			String keyS = key.toString();
+			String node = keyS.substring(0, keyS.indexOf(","));
+			System.out.println(node);
+			return partitions.get(node);
 		}
+
 	}
 
 	static int printUsage() {
@@ -143,13 +163,21 @@ public class Sort2 extends Configured implements Tool {
 
 		/*mgferreira*/
 
-		conf.setNumReduceTasks(10);
 		conf.setIfUnset("useIndexes", "false");
 		conf.setBooleanIfUnset("equal.splits", true);
 		conf.setIfUnset("blocks.per.split", "1");
 
 		String relevantAttrs = "";
 		String filteredAttrs = "";
+		
+
+		BufferedReader br1 = new BufferedReader(new FileReader("names"));
+		String node;
+		String nodes = "";
+		while ((node = br1.readLine()) != null) {
+			nodes += node + ",";
+		}
+		conf.setIfUnset("nodes", nodes);
 
 		BufferedReader br = new BufferedReader(new FileReader(args[1]));
 		String pred;
@@ -197,7 +225,8 @@ public class Sort2 extends Configured implements Tool {
 		conf.setReducerClass(Reduce.class);
 		conf.setOutputFormat(NodeNameBasedMultipleTextOutputFormat.class);
 		conf.setInputFormat(xInputFormat.class);
-		conf.setOutputValueGroupingComparator(MyComparatorClass.class);
+		conf.setNumReduceTasks(20);
+		conf.setPartitionerClass(MyPartitioner.class);
 
 		List<String> other_args = new ArrayList<String>();
 		for(int i=0; i < argsN.length; ++i) {
