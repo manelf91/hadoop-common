@@ -226,7 +226,6 @@ public class xIndexUtils {
 	private static void addEntriesToIndex(String entry, int blocknr) {
 		try {
 			String hash = toHex(entry.getBytes());
-			System.out.println(hash);
 			HashMap<String,  BitSet> currentColumnIndex = index.get(hash);
 			if(currentColumnIndex == null) {
 				currentColumnIndex = new HashMap<String, BitSet>();
