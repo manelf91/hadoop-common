@@ -98,7 +98,11 @@ public class WordCountMy_ci_1 extends Configured implements Tool {
 					return;
 				}
 			}
-			StringTokenizer itr = new StringTokenizer(args[1]);
+			String text = "";
+			if(args.length == 2) {
+				text = args[1];
+			}
+			StringTokenizer itr = new StringTokenizer(text);
 			while (itr.hasMoreTokens()) {
 				word.set(itr.nextToken());
 				output.collect(word, one);
