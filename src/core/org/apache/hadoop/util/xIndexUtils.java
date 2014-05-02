@@ -269,7 +269,7 @@ public class xIndexUtils {
 			return 1;
 		}
 		synchronized (index) {
-			xLog.print("xIndexUtils: Going to check if row group " + blockId + " is relevant");
+			//xLog.print("xIndexUtils: Going to check if row group " + blockId + " is relevant");
 
 			HashMap<Integer, BitSet> relevantBlocksForJob = null;
 			HashMap<Integer, Long> split = (HashMap<Integer, Long>) block2split.get(new Long(blockId));
@@ -296,7 +296,7 @@ public class xIndexUtils {
 			}
 
 			if(split == null) {
-				xLog.print("xIndexUtils: Reading a non-local row group: " + blockId);
+				//xLog.print("xIndexUtils: Reading a non-local row group: " + blockId);
 				return 0;
 			}
 			for(Integer attrNr : filters.keySet()) {
@@ -305,12 +305,12 @@ public class xIndexUtils {
 				BitSet relevantBlocks = relevantBlocksForJob.get(attrNr);
 
 				if((relevantBlocks == null) || (relevantBlocks.get(blocknr.intValue()) == false )) {
-					xLog.print("xIndexUtils: The row group " + blockId + " is irrelevant");
+					//xLog.print("xIndexUtils: The row group " + blockId + " is irrelevant");
 					return -1;
 				}
 			}
 
-			xLog.print("xIndexUtils: The row group " + blockId + " is relevant");
+			//xLog.print("xIndexUtils: The row group " + blockId + " is relevant");
 			return 1;
 		}
 	}
