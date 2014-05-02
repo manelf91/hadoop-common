@@ -182,6 +182,7 @@ public class xIndexUtils {
 				ois = new ObjectInputStream(fin);
 				HashMap<String, BitSet> attrIndex = (HashMap<String, BitSet>) ois.readObject();
 				index.put(file.split("-")[0], attrIndex);
+				fin.close();
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
