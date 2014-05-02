@@ -104,91 +104,92 @@ public class WordCountMy_ci_1 extends Configured implements Tool {
 				output.collect(word, one);
 			}
 		}
+	}
 
-		/**
-		 * A reducer class that just emits the sum of the input values.
-		 */
-		public static class Reduce extends MapReduceBase
-		implements Reducer<Text, IntWritable, Text, IntWritable> {
+	/**
+	 * A reducer class that just emits the sum of the input values.
+	 */
+	public static class Reduce extends MapReduceBase
+	implements Reducer<Text, IntWritable, Text, IntWritable> {
 
-			public void reduce(Text key, Iterator<IntWritable> values,
-					OutputCollector<Text, IntWritable> output, 
-					Reporter reporter) throws IOException {
-				int sum = 0;
-				while (values.hasNext()) {
-					sum += values.next().get();
-				}
-				output.collect(key, new IntWritable(sum));
+		public void reduce(Text key, Iterator<IntWritable> values,
+				OutputCollector<Text, IntWritable> output, 
+				Reporter reporter) throws IOException {
+			int sum = 0;
+			while (values.hasNext()) {
+				sum += values.next().get();
 			}
+			output.collect(key, new IntWritable(sum));
+		}
+	}
+
+	static int printUsage() {
+		System.out.println("wordcount [-m <maps>] [-r <reduces>] <input> <output>");
+		ToolRunner.printGenericCommandUsage(System.out);
+		return -1;
+	}
+
+	/**
+	 * The main driver for word count map/reduce program.
+	 * Invoke this method to submit the map/reduce job.
+	 * @throws IOException When there is communication problems with the 
+	 *                     job tracker.
+	 */
+	public int run(String[] args) throws Exception {
+		/*mgferreira*/
+		JobConf conf = new JobConf(getConf(), WordCountMy_ci_1.class);
+		String jobName = args[0];
+		conf.setJobName(jobName);
+		conf.set("jobName", jobName);
+
+		String blocksPerSplit = args[1];
+		if(blocksPerSplit.contains("-")) {
+			conf.setBooleanIfUnset("equal.splits", false);
+		}
+		else {
+			conf.setBooleanIfUnset("equal.splits", true);
+		}
+		conf.setIfUnset("blocks.per.split", blocksPerSplit);
+
+		String localityFirst = args[2];
+		if (localityFirst.equals("true")) {
+			conf.setBooleanIfUnset("mapred.locality.or.biggest.tasks.first", true);
+		}
+		else {
+			conf.setBooleanIfUnset("mapred.locality.or.biggest.tasks.first", false);
 		}
 
-		static int printUsage() {
-			System.out.println("wordcount [-m <maps>] [-r <reduces>] <input> <output>");
-			ToolRunner.printGenericCommandUsage(System.out);
-			return -1;
+		String relevantAttrs = "";
+		String filteredAttrs = "";
+
+		BufferedReader br = new BufferedReader(new FileReader(args[3]));
+		String pred;
+		int n = 0;
+		while ((pred = br.readLine()) != null) {
+			String absAttr = "";
+			if(!pred.contains(" ")){
+				absAttr = pred;
+			}
+			else {
+				int indexOfFirstSpace = pred.indexOf(" ");
+				int indexOfSecondSpace = pred.indexOf(" ",indexOfFirstSpace+1);
+
+				absAttr = new String(pred.substring(0, indexOfFirstSpace));
+				String relAttr = new String(pred.substring(indexOfFirstSpace+1, indexOfSecondSpace));
+				filteredAttrs += relAttr + ",";
+				String filter = new String(pred.substring(indexOfSecondSpace+1));
+				System.out.println("filter" + relAttr +": " + n + " " + filter);
+				conf.setIfUnset("filter" + relAttr, n + " " + filter);
+			}
+			relevantAttrs += absAttr + ",";
+			n++;
 		}
+		br.close();
 
-		/**
-		 * The main driver for word count map/reduce program.
-		 * Invoke this method to submit the map/reduce job.
-		 * @throws IOException When there is communication problems with the 
-		 *                     job tracker.
-		 */
-		public int run(String[] args) throws Exception {
-			/*mgferreira*/
-			JobConf conf = new JobConf(getConf(), WordCountMy_ci_1.class);
-			String jobName = args[0];
-			conf.setJobName(jobName);
-			conf.set("jobName", jobName);
+		System.out.println("relevantAttrs: " + relevantAttrs);
+		System.out.println("filteredAttrs: " + filteredAttrs);
 
-			String blocksPerSplit = args[1];
-			if(blocksPerSplit.contains("-")) {
-				conf.setBooleanIfUnset("equal.splits", false);
-			}
-			else {
-				conf.setBooleanIfUnset("equal.splits", true);
-			}
-			conf.setIfUnset("blocks.per.split", blocksPerSplit);
-
-			String localityFirst = args[2];
-			if (localityFirst.equals("true")) {
-				conf.setBooleanIfUnset("mapred.locality.or.biggest.tasks.first", true);
-			}
-			else {
-				conf.setBooleanIfUnset("mapred.locality.or.biggest.tasks.first", false);
-			}
-
-			String relevantAttrs = "";
-			String filteredAttrs = "";
-
-			BufferedReader br = new BufferedReader(new FileReader(args[3]));
-			String pred;
-			int n = 0;
-			while ((pred = br.readLine()) != null) {
-				String absAttr = "";
-				if(!pred.contains(" ")){
-					absAttr = pred;
-				}
-				else {
-					int indexOfFirstSpace = pred.indexOf(" ");
-					int indexOfSecondSpace = pred.indexOf(" ",indexOfFirstSpace+1);
-
-					absAttr = new String(pred.substring(0, indexOfFirstSpace));
-					String relAttr = new String(pred.substring(indexOfFirstSpace+1, indexOfSecondSpace));
-					filteredAttrs += relAttr + ",";
-					String filter = new String(pred.substring(indexOfSecondSpace+1));
-					System.out.println("filter" + relAttr +": " + n + " " + filter);
-					conf.setIfUnset("filter" + relAttr, n + " " + filter);
-				}
-				relevantAttrs += absAttr + ",";
-				n++;
-			}
-			br.close();
-
-			System.out.println("relevantAttrs: " + relevantAttrs);
-			System.out.println("filteredAttrs: " + filteredAttrs);
-
-			/*for (String s : filtersANDrelevantAttrs) {
+		/*for (String s : filtersANDrelevantAttrs) {
 			System.out.println(s);
 			String absAttr = "";
 			if(s.contains("=")) {
@@ -203,64 +204,64 @@ public class WordCountMy_ci_1 extends Configured implements Tool {
 			relevantAttrs += absAttr + ":";
 			n++;
 		}*/
-			conf.setIfUnset("relevantAttrs", relevantAttrs);
-			if (!filteredAttrs.equals("")) {
-				conf.setIfUnset("filteredAttrs", filteredAttrs);
-			}
+		conf.setIfUnset("relevantAttrs", relevantAttrs);
+		if (!filteredAttrs.equals("")) {
+			conf.setIfUnset("filteredAttrs", filteredAttrs);
+		}
 
-			conf.setIfUnset("useIndexes", args[4]);
+		conf.setIfUnset("useIndexes", args[4]);
 
 
-			String[] argsN = new String[args.length-5];
-			for (int i = 5; i < args.length; i++) {
-				argsN[i-5] = args[i];
-			}
+		String[] argsN = new String[args.length-5];
+		for (int i = 5; i < args.length; i++) {
+			argsN[i-5] = args[i];
+		}
 
-			// the keys are words (strings)
-			conf.setOutputKeyClass(Text.class);
-			// the values are counts (ints)
-			conf.setOutputValueClass(IntWritable.class);
+		// the keys are words (strings)
+		conf.setOutputKeyClass(Text.class);
+		// the values are counts (ints)
+		conf.setOutputValueClass(IntWritable.class);
 
-			conf.setMapperClass(MapClass.class);
-			conf.setReducerClass(Reduce.class);
-			conf.setInputFormat(xInputFormat.class);
+		conf.setMapperClass(MapClass.class);
+		conf.setReducerClass(Reduce.class);
+		conf.setInputFormat(xInputFormat.class);
 
-			List<String> other_args = new ArrayList<String>();
-			for(int i=0; i < argsN.length; ++i) {
-				try {
-					if ("-m".equals(argsN[i])) {
-						conf.setNumMapTasks(Integer.parseInt(argsN[++i]));
-					} else if ("-r".equals(argsN[i])) {
-						conf.setNumReduceTasks(Integer.parseInt(argsN[++i]));
-					} else {
-						other_args.add(argsN[i]);
-					}
-				} catch (NumberFormatException except) {
-					System.out.println("ERROR: Integer expected instead of " + argsN[i]);
-					return printUsage();
-				} catch (ArrayIndexOutOfBoundsException except) {
-					System.out.println("ERROR: Required parameter missing from " +
-							argsN[i-1]);
-					return printUsage();
+		List<String> other_args = new ArrayList<String>();
+		for(int i=0; i < argsN.length; ++i) {
+			try {
+				if ("-m".equals(argsN[i])) {
+					conf.setNumMapTasks(Integer.parseInt(argsN[++i]));
+				} else if ("-r".equals(argsN[i])) {
+					conf.setNumReduceTasks(Integer.parseInt(argsN[++i]));
+				} else {
+					other_args.add(argsN[i]);
 				}
-			}
-			// Make sure there are exactly 2 parameters left.
-			if (other_args.size() != 2) {
-				System.out.println("ERROR: Wrong number of parameters: " +
-						other_args.size() + " instead of 2.");
+			} catch (NumberFormatException except) {
+				System.out.println("ERROR: Integer expected instead of " + argsN[i]);
+				return printUsage();
+			} catch (ArrayIndexOutOfBoundsException except) {
+				System.out.println("ERROR: Required parameter missing from " +
+						argsN[i-1]);
 				return printUsage();
 			}
-			FileInputFormat.setInputPaths(conf, other_args.get(0));
-			FileOutputFormat.setOutputPath(conf, new Path(other_args.get(1)));
-
-			JobClient.runJob(conf);
-			return 0;
 		}
-
-
-		public static void main(String[] args) throws Exception {
-			int res = ToolRunner.run(new Configuration(), new WordCountMy_ci_1(), args);
-			System.exit(res);
+		// Make sure there are exactly 2 parameters left.
+		if (other_args.size() != 2) {
+			System.out.println("ERROR: Wrong number of parameters: " +
+					other_args.size() + " instead of 2.");
+			return printUsage();
 		}
+		FileInputFormat.setInputPaths(conf, other_args.get(0));
+		FileOutputFormat.setOutputPath(conf, new Path(other_args.get(1)));
 
+		JobClient.runJob(conf);
+		return 0;
 	}
+
+
+	public static void main(String[] args) throws Exception {
+		int res = ToolRunner.run(new Configuration(), new WordCountMy_ci_1(), args);
+		System.exit(res);
+	}
+
+}
