@@ -1839,7 +1839,7 @@ public class DFSClient implements FSConstants, java.io.Closeable {
       byte protocol = DataTransferProtocol.OP_READ_BLOCK;
       if (LineReader.remoteReadAppBlock) {
     	  protocol = DataTransferProtocol.OP_READ_APPBLOCK;
-    	  xLog.print("DFSClient: Going to read the row group " + blockId + " from another datanode");
+    	  //xLog.print("DFSClient: Going to read the row group " + blockId + " from another datanode");
       }
       //write the header.
       out.writeShort( DataTransferProtocol.DATA_TRANSFER_VERSION );
@@ -1871,11 +1871,11 @@ public class DFSClient implements FSConstants, java.io.Closeable {
       /*mgferreira*/
       
       if (status == DataTransferProtocol.OP_READ_IRRELEVANT_APPBLOCK) {
-    	  xLog.print("DFSClient: remote row group " + blockId + " is irrelevant");
+    	  //xLog.print("DFSClient: remote row group " + blockId + " is irrelevant");
     	  throw new IrrelevantRemoteBlockException();
       }
       if (LineReader.remoteReadAppBlock && file.contains(firstColumnId)) {
-    	  xLog.print("DFSClient: remote row group " + blockId + " is relevant");
+    	  //xLog.print("DFSClient: remote row group " + blockId + " is relevant");
       }
       if (status != DataTransferProtocol.OP_STATUS_SUCCESS) {
         if (status == DataTransferProtocol.OP_STATUS_ERROR_ACCESS_TOKEN) {

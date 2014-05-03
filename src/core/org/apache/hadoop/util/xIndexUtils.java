@@ -69,7 +69,7 @@ public class xIndexUtils {
 					Long blockIdL = new Long(blockId);
 					boolean first = item.first;
 					Integer columnNr = new Integer(item.columnNr);
-					xLog.print("Going to add columnNr " + columnNr.intValue() + " to index");
+					//xLog.print("Going to add columnNr " + columnNr.intValue() + " to index");
 
 					openIndexFiles(columnNr);
 
@@ -94,7 +94,7 @@ public class xIndexUtils {
 
 					HashMap<Integer, Long> split = block2split.get(blockIdOfFirstBlock);
 					split.put(columnNr, blockIdL);
-					xLog.print("Added columnNr " + columnNr.intValue() + " to index");
+					//xLog.print("Added columnNr " + columnNr.intValue() + " to index");
 
 					closeIndexFiles(columnNr);
 				}
@@ -265,7 +265,7 @@ public class xIndexUtils {
 	//-1=irrelevant, 1=relevant, 0=non_local_block
 	public static int checkIfRelevantRowGroup(HashMap<Integer, String> filters, long blockId) {
 		if(filters.size() == 0) {
-			xLog.print("xIndexUtils: There are no filters. Block is relevant");
+			//xLog.print("xIndexUtils: There are no filters. Block is relevant");
 			return 1;
 		}
 		synchronized (index) {

@@ -323,10 +323,10 @@ class DataXceiver implements Runnable, FSConstants {
 					/*mgferreira*/
 					byte protocol = 0;
 					//HashMap<Integer, String> filtersMap = xIndexUtils.buildFiltersMap(filters);
-					xLog.print("DataXceiver: A datanode has requested the row group " + firstBlockId);
+					//xLog.print("DataXceiver: A datanode has requested the row group " + firstBlockId);
 
 					if (xIndexUtils.checkIfRelevantRowGroup(filtersMap, firstBlockId) == -1) {
-						xLog.print("DataXceiver: The requested the row group " + firstBlockId + " is irrelevant");
+						//xLog.print("DataXceiver: The requested the row group " + firstBlockId + " is irrelevant");
 						protocol = DataTransferProtocol.OP_READ_IRRELEVANT_APPBLOCK;
 						out.writeShort(protocol); // send op status
 						out.flush();
@@ -334,7 +334,7 @@ class DataXceiver implements Runnable, FSConstants {
 						IOUtils.closeStream(blockSender);
 						return;
 					}
-					xLog.print("DataXceiver: The requested row group " + firstBlockId + " is relevant");
+					//xLog.print("DataXceiver: The requested row group " + firstBlockId + " is relevant");
 					protocol = DataTransferProtocol.OP_STATUS_SUCCESS;
 					out.writeShort(protocol); // send op status
 
@@ -642,8 +642,8 @@ class DataXceiver implements Runnable, FSConstants {
 			blockReceiver.createIndex = checkIfGoingToIndex(blockReceiver);
 			blockReceiver.first = checkIfFirstBlock(blockReceiver);
 
-			xLog.print("DataXceiver: Column " + blockReceiver.currentColumn + ". Going to index it? " + blockReceiver.createIndex);
-			xLog.print("DataXceiver: Column " + blockReceiver.currentColumn + ". Is it the first of a row group? " + blockReceiver.first);
+			//xLog.print("DataXceiver: Column " + blockReceiver.currentColumn + ". Going to index it? " + blockReceiver.createIndex);
+			//xLog.print("DataXceiver: Column " + blockReceiver.currentColumn + ". Is it the first of a row group? " + blockReceiver.first);
 
 			//
 			// Open network conn to backup machine, if 
