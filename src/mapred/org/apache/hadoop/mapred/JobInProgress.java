@@ -2403,7 +2403,6 @@ public class JobInProgress {
 
 			/*mgferreira*/
 			boolean localTasksFirst = conf.getBoolean("mapred.locality.or.biggest.tasks.first", false);
-			System.out.println("localTasksFirst: " + localTasksFirst);
 			if(!localTasksFirst) {
 				List <TaskInProgress> cacheForLevel = null;
 				Node tipKey = null;
@@ -2413,14 +2412,12 @@ public class JobInProgress {
 					if (cacheForLevelTmp != null) {
 						TaskInProgress tipTmp = findTaskFromListWithoutRemove(cacheForLevelTmp, tts, numUniqueHosts,level == 0);
 						if(tipTmp != null) {
-							System.out.println("Evaluating task with " + tipTmp.splitInfo.numberOfFiles + " blocks from " + tipTmp.splitInfo.getLocations()[0].toString() +" to " + tts.getHost());
 							if (tip == null) {
 								tip = tipTmp;
 								tipKey = key;
 								cacheForLevel = cacheForLevelTmp;
 							} else {
 								if (tipTmp.splitInfo.numberOfFiles > tip.splitInfo.numberOfFiles) {
-									System.out.println("save it");
 									tip = tipTmp;
 									tipKey = key;
 									cacheForLevel = cacheForLevelTmp;
@@ -2431,7 +2428,6 @@ public class JobInProgress {
 					key = key.getParent();
 				}
 				if (tip != null) {
-					System.out.println("Scheduling task with " + tip.splitInfo.numberOfFiles + " blocks from " + tip.splitInfo.getLocations()[0].toString() +" to " + tts.getHost());
 					// Add to running cache
 					cacheForLevel.remove(tip);
 					scheduleMap(tip);
@@ -2449,7 +2445,6 @@ public class JobInProgress {
 						tip = findTaskFromList(cacheForLevel, tts, 
 								numUniqueHosts,level == 0);
 						if (tip != null) {
-							System.out.println("Scheduling task with " + tip.splitInfo.numberOfFiles + " blocks from " + tip.splitInfo.getLocations()[0].toString() +" to " + tts.getHost());
 							// Add to running cache
 							scheduleMap(tip);
 

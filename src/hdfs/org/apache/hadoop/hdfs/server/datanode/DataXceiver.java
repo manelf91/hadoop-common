@@ -267,7 +267,6 @@ class DataXceiver implements Runnable, FSConstants {
 		HashMap<Integer, String> filtersMap = null;
 		try {
 			filtersMap = (HashMap<Integer, String>) objIn.readObject();
-			System.out.println(filtersMap.toString());
 		} catch (ClassNotFoundException e1) {
 			e1.printStackTrace();
 		}
