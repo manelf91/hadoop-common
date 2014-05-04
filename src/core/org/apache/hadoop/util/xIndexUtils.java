@@ -336,49 +336,22 @@ public class xIndexUtils {
 		return indexSize;
 	}
 
-	public static int calcIndexSize(){
-		return 0;
-	}
-
 	@StatisticsAnotation
 	public static String getIndexStatistics(){
 		return "index size:"+getIndexSize();
 	}
 
-	/*public static int calcIndexSize() {
+	public static int calcIndexSize() {
 		int size = 0;
-		System.out.println("[i1] # Attributes: " + index.size());
-		long startTime = System.currentTimeMillis();
-		FileOutputStream fout;
-		DataOutputStream dos;
-		ObjectOutputStream oos;
-		try {
-			fout = new FileOutputStream("index.obj");
-			dos = new DataOutputStream(fout);
-			oos = new ObjectOutputStream(dos);
-			oos.writeObject(index);
-			oos.flush();
-			oos.close();
-			System.out.println("[i1] total size: " + dos.size() + " bytes");
-
-			for (Integer attr : index.keySet()){
-				HashMap<String,  BitSet> attrIndex = index.get(attr);
-				System.out.println("[i1] attribute " + attr.intValue() + " has " + attrIndex.size() + " entries");
-				int i = 0;
-				fout = new FileOutputStream("index.obj");
-				dos = new DataOutputStream(fout);
-				oos = new ObjectOutputStream(dos);
-				oos.writeObject(attrIndex);
-				oos.flush();
-				oos.close();
-				System.out.println("[i1] attribute " + attr.intValue() + " = " + dos.size() + " bytes");
+		for(ArrayList<String> files : attrNr2Files.values()) {
+			for(String fileName : files) {
+				File f = new File(indexDir + fileName + ".index");
+				System.out.println("size: " + f.length());
+				size += f.length();
 			}
-		} catch (IOException e) {
-			e.printStackTrace();
 		}
-		long end = System.currentTimeMillis();
-		System.out.println("[i1] time to measure index size: " + (end-startTime) + "milliseconds");
-	}*/
+		return size;
+	}
 
 	public static HashMap<Integer, String> buildFiltersMap(Configuration job) {
 		HashMap<Integer, String> filtersMap = new HashMap<Integer, String>();
@@ -397,11 +370,11 @@ public class xIndexUtils {
 		}
 		return filtersMap;
 	}
-	
+
 	public static String toHex(byte[] bytes) {
-	    BigInteger bi = new BigInteger(1, bytes);
-	    String completedHash = String.format("%0" + (bytes.length << 1) + "X", bi);
-	    String hash = completedHash.substring(completedHash.length()-2, completedHash.length());
-	    return hash;
+		BigInteger bi = new BigInteger(1, bytes);
+		String completedHash = String.format("%0" + (bytes.length << 1) + "X", bi);
+		String hash = completedHash.substring(completedHash.length()-2, completedHash.length());
+		return hash;
 	}
 }
