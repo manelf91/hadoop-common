@@ -24,14 +24,6 @@ import org.apache.hadoop.examples.terasort.TeraGen;
 import org.apache.hadoop.examples.terasort.TeraSort;
 import org.apache.hadoop.examples.terasort.TeraValidate;
 import org.apache.hadoop.util.ProgramDriver;
-import org.apache.hadoop.mapred.WordCountMy;
-import org.apache.hadoop.mapred.WordCountMy_ni_1;
-import org.apache.hadoop.mapred.WordCountMy_ci_1;
-import org.apache.hadoop.mapred.WordCountMy_ni_20;
-import org.apache.hadoop.mapred.WordCountMy_ci_20;
-import org.apache.hadoop.mapred.WordCountMy_ci_2;
-import org.apache.hadoop.mapred.Selection;
-import org.apache.hadoop.mapred.SelectionSent;
 
 
 /**
@@ -48,19 +40,13 @@ public class ExampleDriver {
                    "A map/reduce program that counts the words in the input files.");
       pgd.addClass("wordcountmy", WordCountMy.class, 
                    "A map/reduce program that counts the words in the input files.");
-      pgd.addClass("wordcountmy_ni_1", WordCountMy_ni_1.class, 
-              "A map/reduce program that counts the words in the input files.");
-      pgd.addClass("wordcountmy_ci_1", WordCountMy_ci_1.class, 
-              "A map/reduce program that counts the words in the input files.");
-      pgd.addClass("wordcountmy_ni_20", WordCountMy_ni_20.class, 
-              "A map/reduce program that counts the words in the input files.");
-      pgd.addClass("wordcountmy_ci_20", WordCountMy_ci_20.class, 
-              "A map/reduce program that counts the words in the input files.");
-      pgd.addClass("wordcountmy_ci_2", WordCountMy_ci_2.class,
+      pgd.addClass("wordcountmyhadoop", WordCountMyHadoop.class, 
               "A map/reduce program that counts the words in the input files.");
       pgd.addClass("selection", Selection.class,
               "A map/reduce program that counts the words in the input files.");
       pgd.addClass("selectionSent", SelectionSent.class,
+              "A map/reduce program that counts the words in the input files.");
+      pgd.addClass("selectionSentHadoop", SelectionSentHadoop.class,
               "A map/reduce program that counts the words in the input files.");
       pgd.addClass("aggregatewordcount", AggregateWordCount.class, 
                    "An Aggregate based map/reduce program that counts the words in the input files.");

@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.StringTokenizer;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
@@ -34,6 +35,7 @@ import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.FileInputFormat;
+import org.apache.hadoop.mapred.lib.xInputFormat;
 import org.apache.hadoop.mapred.FileOutputFormat;
 import org.apache.hadoop.mapred.JobClient;
 import org.apache.hadoop.mapred.JobConf;
@@ -42,9 +44,12 @@ import org.apache.hadoop.mapred.Mapper;
 import org.apache.hadoop.mapred.OutputCollector;
 import org.apache.hadoop.mapred.Reducer;
 import org.apache.hadoop.mapred.Reporter;
-import org.apache.hadoop.mapred.lib.xInputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 /**
  * This is an example Hadoop Map/Reduce application.
@@ -55,7 +60,7 @@ import org.apache.hadoop.util.ToolRunner;
  * To run: bin/hadoop jar build/hadoop-examples.jar wordcount
  *            [-m <i>maps</i>] [-r <i>reduces</i>] <i>in-dir</i> <i>out-dir</i> 
  */
-public class SelectionSent extends Configured implements Tool {
+public class WordCountMyHadoop extends Configured implements Tool {
 
 	/**
 	 * Counts the words in each line.
@@ -63,7 +68,7 @@ public class SelectionSent extends Configured implements Tool {
 	 * (<b>word</b>, <b>1</b>).
 	 */
 	public static class MapClass extends MapReduceBase
-	implements Mapper<LongWritable, Text, Text, Text> {
+	implements Mapper<LongWritable, Text, Text, IntWritable> {
 
 		private static HashMap<Integer, String> filtersMap = new HashMap<Integer, String>();
 
@@ -83,25 +88,41 @@ public class SelectionSent extends Configured implements Tool {
 				}
 			}
 		}
+		private final static IntWritable one = new IntWritable(1);
+		private Text word = new Text();
 
-		public void map(LongWritable key, Text value, OutputCollector<Text, Text> output, Reporter reporter) throws IOException {
+		public void map(LongWritable key, Text value, OutputCollector<Text, IntWritable> output, Reporter reporter) throws IOException {
 			String line = value.toString();
 
-			String[] args = line.split(";\\$;#;");
-			for (Map.Entry<Integer,String> entry : filtersMap.entrySet()) {
-				int attrNr = entry.getKey().intValue();
-				String filter = entry.getValue();
-				if (!args[attrNr].equals(filter)) {
-					return;
+			JsonParser parser = new JsonParser();
+			Gson gson = new Gson();
+
+			JsonObject obj = parser.parse(line).getAsJsonObject();
+			Object userObj = null;
+			Object textObj = null;
+			try {
+				textObj = gson.fromJson(obj.get("text"), Class.forName(String.class.getCanonicalName()));
+				userObj = gson.fromJson(obj.get("user"), Class.forName(User.class.getCanonicalName()));
+
+				String user = userObj.toString();
+				String text = textObj.toString();
+
+				String after = user.split(", location=")[1];
+				String location = after.split(", name=")[0];
+				System.out.println(location);
+
+				String filter = filtersMap.get(0);
+				if(location.equals(filter)) {
+					StringTokenizer itr = new StringTokenizer(text);
+					while (itr.hasMoreTokens()) {
+						word.set(itr.nextToken());
+						output.collect(word, one);
+					}
 				}
+			} catch(Exception e) {
+				System.out.println(e.getMessage());
+				e.printStackTrace();
 			}
-			SentimentClassifier sentClassifier = new SentimentClassifier();
-			String text = "";
-			if(args.length == 2) {
-				text = line.substring(line.indexOf(";$;#;")+5);
-			}
-			String sent = sentClassifier.classify(text);
-			output.collect(new Text(args[0]), new Text(sent));
 		}
 	}
 
@@ -109,26 +130,16 @@ public class SelectionSent extends Configured implements Tool {
 	 * A reducer class that just emits the sum of the input values.
 	 */
 	public static class Reduce extends MapReduceBase
-	implements Reducer<Text, Text, Text, Text> {
+	implements Reducer<Text, IntWritable, Text, IntWritable> {
 
-		public void reduce(Text key, Iterator<Text> values,
-				OutputCollector<Text, Text> output, 
+		public void reduce(Text key, Iterator<IntWritable> values,
+				OutputCollector<Text, IntWritable> output, 
 				Reporter reporter) throws IOException {
-
-			HashMap<String, Integer> sentiments = new HashMap<String, Integer>();
-
+			int sum = 0;
 			while (values.hasNext()) {
-				String sent = values.next().toString();
-				Integer cnt = sentiments.get(sent);
-				if (cnt == null) {
-					cnt = new Integer(1);
-					sentiments.put(sent, cnt);
-				}
-				else {
-					sentiments.put(sent, new Integer(cnt.intValue()+1));
-				}
+				sum += values.next().get();
 			}
-			output.collect(key, new Text(sentiments.toString()));
+			output.collect(key, new IntWritable(sum));
 		}
 	}
 
@@ -145,9 +156,8 @@ public class SelectionSent extends Configured implements Tool {
 	 *                     job tracker.
 	 */
 	public int run(String[] args) throws Exception {
-		JobConf conf = new JobConf(getConf(), SelectionSent.class);
-
 		/*mgferreira*/
+		JobConf conf = new JobConf(getConf(), WordCountMyHadoop.class);
 		String jobName = args[0];
 		conf.setJobName(jobName);
 		conf.set("jobName", jobName);
@@ -230,7 +240,7 @@ public class SelectionSent extends Configured implements Tool {
 		// the keys are words (strings)
 		conf.setOutputKeyClass(Text.class);
 		// the values are counts (ints)
-		conf.setOutputValueClass(Text.class);
+		conf.setOutputValueClass(IntWritable.class);
 
 		conf.setMapperClass(MapClass.class);
 		conf.setReducerClass(Reduce.class);
@@ -270,7 +280,7 @@ public class SelectionSent extends Configured implements Tool {
 
 
 	public static void main(String[] args) throws Exception {
-		int res = ToolRunner.run(new Configuration(), new SelectionSent(), args);
+		int res = ToolRunner.run(new Configuration(), new WordCountMyHadoop(), args);
 		System.exit(res);
 	}
 

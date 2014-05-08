@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.hadoop.mapred;
+package org.apache.hadoop.examples;
 
 import java.io.BufferedReader;
 import java.io.FileReader;

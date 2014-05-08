@@ -25,12 +25,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.FileInputFormat;
@@ -46,6 +44,11 @@ import org.apache.hadoop.mapred.lib.xInputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
 /**
  * This is an example Hadoop Map/Reduce application.
  * It reads the text input files, breaks each line into words
@@ -55,7 +58,8 @@ import org.apache.hadoop.util.ToolRunner;
  * To run: bin/hadoop jar build/hadoop-examples.jar wordcount
  *            [-m <i>maps</i>] [-r <i>reduces</i>] <i>in-dir</i> <i>out-dir</i> 
  */
-public class SelectionSent extends Configured implements Tool {
+public class SelectionSentHadoop extends Configured implements Tool {
+
 
 	/**
 	 * Counts the words in each line.
@@ -63,7 +67,7 @@ public class SelectionSent extends Configured implements Tool {
 	 * (<b>word</b>, <b>1</b>).
 	 */
 	public static class MapClass extends MapReduceBase
-	implements Mapper<LongWritable, Text, Text, Text> {
+	implements Mapper<LongWritable, Text, Text, Text> {				
 
 		private static HashMap<Integer, String> filtersMap = new HashMap<Integer, String>();
 
@@ -87,21 +91,42 @@ public class SelectionSent extends Configured implements Tool {
 		public void map(LongWritable key, Text value, OutputCollector<Text, Text> output, Reporter reporter) throws IOException {
 			String line = value.toString();
 
-			String[] args = line.split(";\\$;#;");
-			for (Map.Entry<Integer,String> entry : filtersMap.entrySet()) {
-				int attrNr = entry.getKey().intValue();
-				String filter = entry.getValue();
-				if (!args[attrNr].equals(filter)) {
-					return;
+			ArrayList<String> listdata1 = new ArrayList<String>();
+			JsonParser parser = new JsonParser();
+			JsonArray jArray1 = parser.parse(line).getAsJsonArray();
+			if (jArray1 != null) { 
+				for (int i=0; i < jArray1.size(); i++){ 
+					listdata1.add(jArray1.get(i).toString());
 				}
 			}
-			SentimentClassifier sentClassifier = new SentimentClassifier();
-			String text = "";
-			if(args.length == 2) {
-				text = line.substring(line.indexOf(";$;#;")+5);
+			String user = listdata1.get(22);
+			String location = "";
+			String language = "";
+			try {
+				String after1 = user.split(", location=")[1];
+				location = after1.split(", name=")[0];
+			} catch(Exception e) {
+				String after1 = user.split("location=")[1];
+				location = after1.split(", lang=")[0];
 			}
-			String sent = sentClassifier.classify(text);
-			output.collect(new Text(args[0]), new Text(sent));
+			location = "location:" +  location;
+
+			try {
+				String after2 = user.split(", lang=")[1];
+				language = after2.split(", listed_count=")[0];
+			} catch(Exception e) {
+				language = user.split(", lang=")[1];
+			}
+			language = "lang:" +  language;
+
+			String text = listdata1.get(19);
+
+			String filter = filtersMap.get(0);
+			if(language.equals(filter)) {
+				SentimentClassifier sentClassifier = new SentimentClassifier();
+				String sent = sentClassifier.classify(text);
+				output.collect(new Text(language), new Text(sent));
+			} 
 		}
 	}
 
@@ -145,7 +170,7 @@ public class SelectionSent extends Configured implements Tool {
 	 *                     job tracker.
 	 */
 	public int run(String[] args) throws Exception {
-		JobConf conf = new JobConf(getConf(), SelectionSent.class);
+		JobConf conf = new JobConf(getConf(), SelectionSentHadoop.class);
 
 		/*mgferreira*/
 		String jobName = args[0];
@@ -270,8 +295,9 @@ public class SelectionSent extends Configured implements Tool {
 
 
 	public static void main(String[] args) throws Exception {
-		int res = ToolRunner.run(new Configuration(), new SelectionSent(), args);
+		int res = ToolRunner.run(new Configuration(), new SelectionSentHadoop(), args);
 		System.exit(res);
 	}
-
 }
+
+
