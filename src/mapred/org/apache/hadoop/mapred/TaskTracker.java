@@ -4634,6 +4634,11 @@ Runnable, TaskTrackerMXBean {
 	}
 
 	@Override
+	public void increaseMapFunctionTime(long time) {
+		xIndexUtils.mapFunctionTime += time;
+	}
+
+	@Override
 	public String getIndexSize() {
 		//String indexSize = xIndexUtils.getIndexSizeStr();
 		return "";

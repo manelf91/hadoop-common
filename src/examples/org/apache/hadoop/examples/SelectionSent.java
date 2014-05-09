@@ -38,6 +38,7 @@ import org.apache.hadoop.mapred.FileOutputFormat;
 import org.apache.hadoop.mapred.JobClient;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.MapReduceBase;
+import org.apache.hadoop.mapred.MapTask;
 import org.apache.hadoop.mapred.Mapper;
 import org.apache.hadoop.mapred.OutputCollector;
 import org.apache.hadoop.mapred.Reducer;
@@ -87,11 +88,15 @@ public class SelectionSent extends Configured implements Tool {
 		public void map(LongWritable key, Text value, OutputCollector<Text, Text> output, Reporter reporter) throws IOException {
 			String line = value.toString();
 
+			long start = System.currentTimeMillis();
+
 			String[] args = line.split(";\\$;#;");
 			for (Map.Entry<Integer,String> entry : filtersMap.entrySet()) {
 				int attrNr = entry.getKey().intValue();
 				String filter = entry.getValue();
 				if (!args[attrNr].equals(filter)) {
+					long end = System.currentTimeMillis();
+					MapTask.increaseMapFunctionTime(end-start);
 					return;
 				}
 			}
@@ -102,6 +107,9 @@ public class SelectionSent extends Configured implements Tool {
 			}
 			String sent = sentClassifier.classify(text);
 			output.collect(new Text(args[0]), new Text(sent));
+			
+			long end = System.currentTimeMillis();
+			MapTask.increaseMapFunctionTime(end-start);
 		}
 	}
 

@@ -572,6 +572,9 @@ public class LocalJobRunner implements JobSubmissionProtocol {
 		// TODO Auto-generated method stub
 		return 0;
 	}
+	
+	@Override
+	public void increaseMapFunctionTime(long time) {}
   }
 
   public LocalJobRunner(JobConf conf) throws IOException {

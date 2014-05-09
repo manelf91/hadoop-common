@@ -138,6 +138,8 @@ public class IsolationRunner {
 		// TODO Auto-generated method stub
 		return 0;
 	}
+	@Override
+	public void increaseMapFunctionTime(long time) {}
   }
   
   private ClassLoader makeClassLoader(JobConf conf, 

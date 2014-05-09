@@ -185,4 +185,6 @@ public interface TaskUmbilicalProtocol extends VersionedProtocol {
 	
 	/*mgferreira*/
 	int checkIfRelevantRowGroup(long blockId, Configuration job);
+
+	void increaseMapFunctionTime(long time);
 }

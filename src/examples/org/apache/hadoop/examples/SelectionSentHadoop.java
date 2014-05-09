@@ -36,6 +36,7 @@ import org.apache.hadoop.mapred.FileOutputFormat;
 import org.apache.hadoop.mapred.JobClient;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.MapReduceBase;
+import org.apache.hadoop.mapred.MapTask;
 import org.apache.hadoop.mapred.Mapper;
 import org.apache.hadoop.mapred.OutputCollector;
 import org.apache.hadoop.mapred.Reducer;
@@ -91,6 +92,8 @@ public class SelectionSentHadoop extends Configured implements Tool {
 		public void map(LongWritable key, Text value, OutputCollector<Text, Text> output, Reporter reporter) throws IOException {
 			String line = value.toString();
 
+			long start = System.currentTimeMillis();
+
 			ArrayList<String> listdata1 = new ArrayList<String>();
 			JsonParser parser = new JsonParser();
 			JsonArray jArray1 = parser.parse(line).getAsJsonArray();
@@ -126,7 +129,9 @@ public class SelectionSentHadoop extends Configured implements Tool {
 				SentimentClassifier sentClassifier = new SentimentClassifier();
 				String sent = sentClassifier.classify(text);
 				output.collect(new Text(language), new Text(sent));
-			} 
+			}
+			long end = System.currentTimeMillis();
+			MapTask.increaseMapFunctionTime(end-start);
 		}
 	}
 

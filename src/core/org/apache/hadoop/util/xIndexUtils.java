@@ -51,6 +51,8 @@ public class xIndexUtils {
 
 	private static int indexSize = -1;
 
+	public static long mapFunctionTime = 0;
+
 	static {
 		Object obj = new xIndexUtils();
 		StatisticsAgregator.getInstance().register(obj);
@@ -339,6 +341,11 @@ public class xIndexUtils {
 	@StatisticsAnotation
 	public static String getIndexStatistics(){
 		return "index size:"+getIndexSize();
+	}
+	
+	@StatisticsAnotation
+	public static String getMapFunctionTimeStatistics(){
+		return "time:"+mapFunctionTime;
 	}
 
 	public static int calcIndexSize() {

@@ -1829,5 +1829,9 @@ public class MapTask extends Task {
 		xLog.print("Map Task: Going to check if block " + blockId + " is relevant...");
 		return umbilicalAux.checkIfRelevantRowGroup(blockId, job);
 	}
+	
+	public static void increaseMapFunctionTime(long time) {
+		umbilicalAux.increaseMapFunctionTime(time);
+	}
 
 }

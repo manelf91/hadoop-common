@@ -25,7 +25,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.StringTokenizer;
 
 import org.apache.hadoop.conf.Configuration;
@@ -35,20 +34,21 @@ import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.FileInputFormat;
-import org.apache.hadoop.mapred.lib.xInputFormat;
 import org.apache.hadoop.mapred.FileOutputFormat;
 import org.apache.hadoop.mapred.JobClient;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.MapReduceBase;
+import org.apache.hadoop.mapred.MapTask;
 import org.apache.hadoop.mapred.Mapper;
 import org.apache.hadoop.mapred.OutputCollector;
 import org.apache.hadoop.mapred.Reducer;
 import org.apache.hadoop.mapred.Reporter;
+import org.apache.hadoop.mapred.lib.xInputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
+import org.apache.hadoop.util.xIndexUtils;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonParser;
 
 /**
@@ -94,35 +94,48 @@ public class WordCountMyHadoop extends Configured implements Tool {
 		public void map(LongWritable key, Text value, OutputCollector<Text, IntWritable> output, Reporter reporter) throws IOException {
 			String line = value.toString();
 
+			long start = System.currentTimeMillis();
+
+			ArrayList<String> listdata1 = new ArrayList<String>();
 			JsonParser parser = new JsonParser();
-			Gson gson = new Gson();
-
-			JsonObject obj = parser.parse(line).getAsJsonObject();
-			Object userObj = null;
-			Object textObj = null;
-			try {
-				textObj = gson.fromJson(obj.get("text"), Class.forName(String.class.getCanonicalName()));
-				userObj = gson.fromJson(obj.get("user"), Class.forName(User.class.getCanonicalName()));
-
-				String user = userObj.toString();
-				String text = textObj.toString();
-
-				String after = user.split(", location=")[1];
-				String location = after.split(", name=")[0];
-				System.out.println(location);
-
-				String filter = filtersMap.get(0);
-				if(location.equals(filter)) {
-					StringTokenizer itr = new StringTokenizer(text);
-					while (itr.hasMoreTokens()) {
-						word.set(itr.nextToken());
-						output.collect(word, one);
-					}
+			JsonArray jArray1 = parser.parse(line).getAsJsonArray();
+			if (jArray1 != null) { 
+				for (int i=0; i < jArray1.size(); i++){ 
+					listdata1.add(jArray1.get(i).toString());
 				}
-			} catch(Exception e) {
-				System.out.println(e.getMessage());
-				e.printStackTrace();
 			}
+			String user = listdata1.get(22);
+			String location = "";
+			String language = "";
+			try {
+				String after1 = user.split(", location=")[1];
+				location = after1.split(", name=")[0];
+			} catch(Exception e) {
+				String after1 = user.split("location=")[1];
+				location = after1.split(", lang=")[0];
+			}
+			location = "location:" +  location;
+
+			try {
+				String after2 = user.split(", lang=")[1];
+				language = after2.split(", listed_count=")[0];
+			} catch(Exception e) {
+				language = user.split(", lang=")[1];
+			}
+			language = "lang:" +  language;
+
+			String text = listdata1.get(19);
+
+			String filter = filtersMap.get(0);
+			if(language.equals(filter)) {
+				StringTokenizer itr = new StringTokenizer(text);
+				while (itr.hasMoreTokens()) {
+					word.set(itr.nextToken());
+					output.collect(word, one);
+				}
+			}
+			long end = System.currentTimeMillis();
+			MapTask.increaseMapFunctionTime(end-start);
 		}
 	}
 
