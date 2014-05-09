@@ -342,6 +342,7 @@
     <fileset dir="${basedir}">
 	<include name="commons-primitives-1.0.jar"/>
 	<include name="lingpipe-4.1.0.jar" />
+	<include name="gson-2.2.4.jar" />
     </fileset>
   </path>
 
