@@ -4635,7 +4635,7 @@ Runnable, TaskTrackerMXBean {
 
 	@Override
 	public void increaseMapFunctionTime(long time) {
-		xIndexUtils.mapFunctionTime += time;
+		xIndexUtils.increaseMapTime(time);
 	}
 
 	@Override

@@ -349,6 +349,10 @@ public class xIndexUtils {
 	public static String getMapFunctionTimeStatistics(){
 		return "time:"+mapFunctionTime;
 	}
+	
+	public synchronized static void increaseMapTime(long time) {
+		mapFunctionTime += time;
+	}
 
 	public static int calcIndexSize() {
 		int size = 0;
