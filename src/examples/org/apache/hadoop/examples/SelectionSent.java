@@ -88,18 +88,15 @@ public class SelectionSent extends Configured implements Tool {
 		public void map(LongWritable key, Text value, OutputCollector<Text, Text> output, Reporter reporter) throws IOException {
 			String line = value.toString();
 
-			long start = System.currentTimeMillis();
-
 			String[] args = line.split(";\\$;#;");
 			for (Map.Entry<Integer,String> entry : filtersMap.entrySet()) {
 				int attrNr = entry.getKey().intValue();
 				String filter = entry.getValue();
 				if (!args[attrNr].equals(filter)) {
-					long end = System.currentTimeMillis();
-					MapTask.increaseMapFunctionTime(end-start);
 					return;
 				}
 			}
+			long start = System.currentTimeMillis();
 			SentimentClassifier sentClassifier = new SentimentClassifier();
 			String text = "";
 			if(args.length == 2) {
