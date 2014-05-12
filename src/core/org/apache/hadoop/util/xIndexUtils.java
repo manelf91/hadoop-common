@@ -53,6 +53,8 @@ public class xIndexUtils {
 
 	public static long mapFunctionTime = 0;
 
+	public static int rowGroupsPerNode;
+
 	static {
 		Object obj = new xIndexUtils();
 		StatisticsAgregator.getInstance().register(obj);
@@ -236,7 +238,7 @@ public class xIndexUtils {
 			}
 			BitSet blocksForEntry = currentColumnIndex.get(entry);
 			if(blocksForEntry == null) {
-				blocksForEntry = new  BitSet(28);
+				blocksForEntry = new  BitSet(rowGroupsPerNode);
 				currentColumnIndex.put(entry, blocksForEntry);
 			}
 			blocksForEntry.set(blocknr);
