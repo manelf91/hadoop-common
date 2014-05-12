@@ -100,7 +100,7 @@ public class WordCountMy extends Configured implements Tool {
 					return;
 				}
 			}
-			long start = System.currentTimeMillis();
+			//long start = System.currentTimeMillis();
 			String text = "";
 			if(args.length == 2) {
 				text = args[1];
@@ -110,8 +110,8 @@ public class WordCountMy extends Configured implements Tool {
 				word.set(itr.nextToken());
 				output.collect(word, one);
 			}
-			long end = System.currentTimeMillis();
-			MapTask.increaseMapFunctionTime(end-start);
+			//long end = System.currentTimeMillis();
+			//MapTask.increaseMapFunctionTime(end-start);
 		}
 	}
 
