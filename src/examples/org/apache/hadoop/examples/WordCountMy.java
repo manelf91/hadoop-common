@@ -99,7 +99,7 @@ public class WordCountMy extends Configured implements Tool {
 				String filter = entry.getValue();
 				if (!args[attrNr].equals(filter)) {
 					long end = System.currentTimeMillis();
-					MapTask.increaseMapFunctionTime(end-start);
+//					MapTask.increaseMapFunctionTime(end-start);
 					return;
 				}
 			}
@@ -113,7 +113,7 @@ public class WordCountMy extends Configured implements Tool {
 				output.collect(word, one);
 			}
 			long end = System.currentTimeMillis();
-			MapTask.increaseMapFunctionTime(end-start);
+//			MapTask.increaseMapFunctionTime(end-start);
 		}
 	}
 
