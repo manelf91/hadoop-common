@@ -119,7 +119,7 @@ public class xRecordReader implements RecordReader<LongWritable, Text> {
 			FIRST_COLUMN_IDENTIFIER = job.get("first.column.identifier");
 
 			start = split.getStart();
-			end = start + split.getLength();
+			end = start + Integer.MAX_VALUE;
 			
 			ArrayList<Path> pathsToBlocksOfRelevantSplit = getPathsToRelevantSplit(split.getPaths().get(currentRowGroupIndex), job);
 			final Path file = pathsToBlocksOfRelevantSplit.remove(0);
@@ -308,6 +308,7 @@ public class xRecordReader implements RecordReader<LongWritable, Text> {
 				// line too long. try again
 				LOG.info("Skipped line of size " + newSize + " at pos " + (pos - newSize));
 			}
+
 			close();
 			currentRowGroupIndex++;
 			if(currentRowGroupIndex == split.getNumberOfFiles()) {
