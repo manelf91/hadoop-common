@@ -39,6 +39,7 @@ implements InputSplit {
 	/*mgferreira*/
 	private ArrayList<Long> blocksIds = new ArrayList<Long>();
 	private ArrayList<Path> files = new ArrayList<Path>();
+	private ArrayList<Long> lengths = new ArrayList<Long>();
 	private int numberOfFiles;
 
 	xFileSplit() {}
@@ -69,10 +70,11 @@ implements InputSplit {
 	}
 
 	/*mgferreira*/
-	public xFileSplit(ArrayList<Long> blocksIds, int numberOfFiles, ArrayList<Path> files, long start, long length, String[] hosts) {
-		this(files, start, length, hosts);
+	public xFileSplit(ArrayList<Long> blocksIds, int numberOfFiles, ArrayList<Path> files, long start, ArrayList<Long> lengths, String[] hosts) {
+		this(files, start, 0, hosts);
 		this.blocksIds = blocksIds;
 		this.numberOfFiles = numberOfFiles;
+		this.lengths = lengths;
 	}
 
 	/** The position of the first byte in the file to process. */
@@ -97,7 +99,10 @@ implements InputSplit {
 		for(Long blockId : blocksIds) {
 			out.writeLong(blockId.longValue());
 		}
-		UTF8.writeString(out, hosts[0]);
+		UTF8.writeString(out, hosts[0]);		
+		for(Long length : lengths) {
+			out.writeLong(length.longValue());
+		}	
 	}
 	public void readFields(DataInput in) throws IOException {
 		numberOfFiles = in.readInt();
@@ -111,6 +116,9 @@ implements InputSplit {
 		}
 		hosts = new String[1];
 		hosts[0] = UTF8.readString(in);
+		for(int i = 0; i < numberOfFiles; i++) {
+			lengths.add(i, new Long(in.readLong()));
+		}
 	}
 
 	public String[] getLocations() throws IOException {
@@ -140,5 +148,9 @@ implements InputSplit {
 
 	public void setBlocksIds(ArrayList<Long> blocksIds) {
 		this.blocksIds = blocksIds;
+	}	
+	
+	public ArrayList<Long> getLengths() {
+		return lengths;
 	}
 }

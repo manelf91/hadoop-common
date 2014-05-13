@@ -234,6 +234,7 @@ public class WordCountMy extends Configured implements Tool {
 		conf.setMapperClass(MapClass.class);
 		conf.setReducerClass(Reduce.class);
 		conf.setInputFormat(xInputFormat.class);
+		conf.setNumReduceTasks(20);
 
 		List<String> other_args = new ArrayList<String>();
 		for(int i=0; i < argsN.length; ++i) {

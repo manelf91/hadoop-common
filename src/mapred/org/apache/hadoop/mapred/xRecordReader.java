@@ -119,7 +119,7 @@ public class xRecordReader implements RecordReader<LongWritable, Text> {
 			FIRST_COLUMN_IDENTIFIER = job.get("first.column.identifier");
 
 			start = split.getStart();
-			end = start + Integer.MAX_VALUE;
+			end = start + split.getLengths().get(currentRowGroupIndex);
 			
 			ArrayList<Path> pathsToBlocksOfRelevantSplit = getPathsToRelevantSplit(split.getPaths().get(currentRowGroupIndex), job);
 			final Path file = pathsToBlocksOfRelevantSplit.remove(0);
