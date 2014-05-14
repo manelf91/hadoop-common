@@ -173,7 +173,7 @@ public class WordCountMyHadoop extends Configured implements Tool {
 		JobConf conf = new JobConf(getConf(), WordCountMyHadoop.class);
 		String jobName = args[0];
 		conf.setJobName(jobName);
-		conf.set("jobName", jobName);
+		conf.set("jobName", "hadoop");
 
 		String blocksPerSplit = args[1];
 		if(blocksPerSplit.contains("-")) {

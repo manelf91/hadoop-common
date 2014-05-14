@@ -132,6 +132,7 @@ import org.apache.hadoop.util.ServicePlugin;
 import org.apache.hadoop.util.StringUtils;
 import org.apache.hadoop.util.VersionInfo;
 import org.apache.hadoop.util.xIndexUtils;
+import org.apache.hadoop.util.xIndexUtilsHadoop;
 import org.mortbay.util.ajax.JSON;
 
 /**********************************************************
@@ -177,6 +178,7 @@ public class DataNode extends Configured
   
   /*mgferreira*/
   public int columnsPerRowGroup;
+  public boolean runHadoopPlusPlus;
   public int currentColumn = -1;
   public ArrayList<Integer> columnsToIndex = new ArrayList<Integer>();
 
@@ -328,7 +330,15 @@ public class DataNode extends Configured
 			columnsToIndex.add(Integer.parseInt(columnToIndex));
 		}
 	}
-	xIndexUtils.initializeIndexBuilderThread();
+	runHadoopPlusPlus = conf.getBoolean("hadoopplusplus", false);
+	System.out.println(runHadoopPlusPlus);
+	if(runHadoopPlusPlus == true) {
+		xIndexUtilsHadoop.initializeIndexBuilderThread();
+	}
+	else {
+		xIndexUtils.initializeIndexBuilderThread();
+	}
+
 	int rowGroupsperNode = conf.getInt("number.of.row.groups", 1)/conf.getInt("number.of.nodes", 1);
 	xIndexUtils.rowGroupsPerNode = rowGroupsperNode;
 	

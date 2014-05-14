@@ -138,8 +138,15 @@ public class IsolationRunner {
 		// TODO Auto-generated method stub
 		return 0;
 	}
+	
 	@Override
 	public void increaseMapFunctionTime(long time) {}
+
+	@Override
+	public long checkIfRelevantHadoopTweetFile(long blockId, Configuration job) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
   }
   
   private ClassLoader makeClassLoader(JobConf conf, 

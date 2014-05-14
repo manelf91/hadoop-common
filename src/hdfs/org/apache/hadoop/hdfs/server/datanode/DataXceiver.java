@@ -53,6 +53,7 @@ import org.apache.hadoop.security.token.Token;
 import org.apache.hadoop.util.DataChecksum;
 import org.apache.hadoop.util.StringUtils;
 import org.apache.hadoop.util.xIndexUtils;
+import org.apache.hadoop.util.xIndexUtilsHadoop;
 import org.apache.hadoop.util.xLog;
 
 /**
@@ -108,6 +109,9 @@ class DataXceiver implements Runnable, FSConstants {
 			}
 			long startTime = DataNode.now();
 			switch ( op ) {
+			case DataTransferProtocol.OP_GET_OFFSET:
+				getOffset(in);
+				break;
 			case DataTransferProtocol.OP_READ_BLOCK:
 				readBlock( in );
 				datanode.myMetrics.addReadBlockOp(DataNode.now() - startTime);
@@ -270,7 +274,7 @@ class DataXceiver implements Runnable, FSConstants {
 		} catch (ClassNotFoundException e1) {
 			e1.printStackTrace();
 		}
-		
+
 		long blockId = in.readLong();
 
 		//aceder ao indice
@@ -303,6 +307,7 @@ class DataXceiver implements Runnable, FSConstants {
 		}
 		// send the block
 		BlockSender blockSender = null;
+
 		final String clientTraceFmt =
 				clientName.length() > 0 && ClientTraceLog.isInfoEnabled()
 				? String.format(DN_CLIENTTRACE_FORMAT, localAddress, remoteAddress,
@@ -330,7 +335,6 @@ class DataXceiver implements Runnable, FSConstants {
 						out.writeShort(protocol); // send op status
 						out.flush();
 						IOUtils.closeStream(out);
-						IOUtils.closeStream(blockSender);
 						return;
 					}
 					//xLog.print("DataXceiver: The requested row group " + firstBlockId + " is relevant");
@@ -367,6 +371,24 @@ class DataXceiver implements Runnable, FSConstants {
 					IOUtils.closeStream(out);
 					IOUtils.closeStream(blockSender);
 				}
+	}
+
+	private void getOffset(DataInputStream in) throws IOException {
+		String blockId = Text.readString(in);
+		ObjectInputStream objIn = new ObjectInputStream(in);
+		HashMap<Integer, String> filtersMap = null;
+		try {
+			filtersMap = (HashMap<Integer, String>) objIn.readObject();
+		} catch(Exception e) {
+			System.out.println(e.getMessage());
+			e.printStackTrace();
+		}
+		long offset = xIndexUtilsHadoop.checkIfRelevantHadoopTweetFile(filtersMap, blockId);
+		OutputStream baseStream = NetUtils.getOutputStream(s, datanode.socketWriteTimeout);
+		DataOutputStream out = new DataOutputStream(new BufferedOutputStream(baseStream, SMALL_BUFFER_SIZE));
+		out.writeLong(offset);
+		out.flush();
+		IOUtils.closeStream(out);
 	}
 
 	/**

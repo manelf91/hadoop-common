@@ -51,6 +51,7 @@ import org.apache.hadoop.util.PureJavaCrc32;
 import org.apache.hadoop.util.StringUtils;
 import org.apache.hadoop.util.xBlockQueueItem;
 import org.apache.hadoop.util.xIndexUtils;
+import org.apache.hadoop.util.xIndexUtilsHadoop;
 import org.apache.hadoop.util.xLog;
 
 /** A class that receives a block and writes to its own disk, meanwhile
@@ -464,7 +465,11 @@ class BlockReceiver implements java.io.Closeable, FSConstants {
 				if(lastPacketInBlock) {
 					currentCompressedData.close();
 					xBlockQueueItem item = new xBlockQueueItem(block.getBlockId(), currentCompressedData, currentColumn, first);
-					xIndexUtils.queue.add(item);
+					if(datanode.runHadoopPlusPlus == true) {
+						xIndexUtilsHadoop.queue.add(item);
+					} else {
+						xIndexUtils.queue.add(item);
+					}
 					currentCompressedData = new ByteArrayOutputStream();
 				}
 			}
@@ -508,7 +513,11 @@ class BlockReceiver implements java.io.Closeable, FSConstants {
 						if(lastPacketInBlock) {
 							currentCompressedData.close();
 							xBlockQueueItem item = new xBlockQueueItem(block.getBlockId(), currentCompressedData, currentColumn, first);
-							xIndexUtils.queue.add(item);
+							if(datanode.runHadoopPlusPlus == true) {
+								xIndexUtilsHadoop.queue.add(item);
+							} else {
+								xIndexUtils.queue.add(item);
+							}
 							currentCompressedData = new ByteArrayOutputStream();
 						}
 					}

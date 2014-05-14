@@ -571,6 +571,12 @@ public class LocalJobRunner implements JobSubmissionProtocol {
 	public int checkIfRelevantRowGroup(long blockId, Configuration filters) {
 		// TODO Auto-generated method stub
 		return 0;
+	}	
+	
+	@Override
+	public long checkIfRelevantHadoopTweetFile(long blockId, Configuration job) {
+		// TODO Auto-generated method stub
+		return 0;
 	}
 	
 	@Override

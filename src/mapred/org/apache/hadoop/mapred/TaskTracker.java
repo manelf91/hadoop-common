@@ -107,6 +107,7 @@ import org.apache.hadoop.util.MemoryCalculatorPlugin;
 import org.apache.hadoop.util.ResourceCalculatorPlugin;
 import org.apache.hadoop.util.ProcfsBasedProcessTree;
 import org.apache.hadoop.util.xIndexUtils;
+import org.apache.hadoop.util.xIndexUtilsHadoop;
 import org.apache.hadoop.util.xLog;
 import org.apache.hadoop.security.token.Token;
 import org.apache.hadoop.security.token.TokenIdentifier;
@@ -4631,6 +4632,12 @@ Runnable, TaskTrackerMXBean {
 	public int checkIfRelevantRowGroup(long blockId, Configuration job) {
 		HashMap<Integer, String> filtersMap = xIndexUtils.buildFiltersMap(job);
 		return xIndexUtils.checkIfRelevantRowGroup(filtersMap, blockId);
+	}	
+	
+	@Override
+	public long checkIfRelevantHadoopTweetFile(long blockId, Configuration job) {
+		HashMap<Integer, String> filtersMap = xIndexUtils.buildFiltersMap(job);
+		return xIndexUtilsHadoop.checkIfRelevantHadoopTweetFile(filtersMap, blockId+"");
 	}
 
 	@Override

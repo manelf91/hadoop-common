@@ -1830,6 +1830,14 @@ public class MapTask extends Task {
 		return umbilicalAux.checkIfRelevantRowGroup(blockId, job);
 	}
 	
+	public static long relevantHadoopTweetFile(long blockId, Configuration job) {
+		if (DFSClient.filters == null) {
+			return 0;
+		}
+		xLog.print("Map Task: Going to check if tweet file " + blockId + " is relevant...");
+		return umbilicalAux.checkIfRelevantHadoopTweetFile(blockId, job);
+	}
+	
 	public static void increaseMapFunctionTime(long time) {
 		umbilicalAux.increaseMapFunctionTime(time);
 	}

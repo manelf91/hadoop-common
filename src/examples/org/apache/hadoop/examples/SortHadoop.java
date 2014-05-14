@@ -21,6 +21,8 @@ package org.apache.hadoop.examples;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -31,6 +33,7 @@ import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.compress.GzipCodec;
 import org.apache.hadoop.mapred.FileInputFormat;
 import org.apache.hadoop.mapred.FileOutputFormat;
 import org.apache.hadoop.mapred.JobClient;
@@ -41,13 +44,14 @@ import org.apache.hadoop.mapred.Mapper;
 import org.apache.hadoop.mapred.OutputCollector;
 import org.apache.hadoop.mapred.Reducer;
 import org.apache.hadoop.mapred.Reporter;
+import org.apache.hadoop.mapred.TextOutputFormat;
+import org.apache.hadoop.mapred.lib.MultipleTextOutputFormat;
 import org.apache.hadoop.mapred.lib.xInputFormat;
+import org.apache.hadoop.mapred.Partitioner;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 /**
@@ -59,8 +63,7 @@ import com.google.gson.JsonParser;
  * To run: bin/hadoop jar build/hadoop-examples.jar wordcount
  *            [-m <i>maps</i>] [-r <i>reduces</i>] <i>in-dir</i> <i>out-dir</i> 
  */
-public class SelectionSentHadoop extends Configured implements Tool {
-
+public class SortHadoop extends Configured implements Tool {
 
 	/**
 	 * Counts the words in each line.
@@ -70,33 +73,13 @@ public class SelectionSentHadoop extends Configured implements Tool {
 	public static class MapClass extends MapReduceBase
 	implements Mapper<LongWritable, Text, Text, Text> {				
 
-		private static HashMap<Integer, String> filtersMap = new HashMap<Integer, String>();
-
-		public void configure(JobConf job) {        
-			String filters = job.get("filteredAttrs");
-			if (filters != null) {
-
-				String[] filtersByAttr = filters.split(",");
-
-				for (String filteredAttr : filtersByAttr) {
-					String body = job.get("filter" + filteredAttr);
-
-					int attrNr = Integer.parseInt(body.substring(0, body.indexOf(" ")));
-					String filter = body.substring(body.indexOf(" ")+1);
-
-					filtersMap.put(new Integer(attrNr), filter);
-				}
-			}
-		}
-
 		public void map(LongWritable key, Text value, OutputCollector<Text, Text> output, Reporter reporter) throws IOException {
 			String line = value.toString();
-
-			long start = System.currentTimeMillis();
+			String record = line.substring(line.indexOf(",")+1);
 
 			ArrayList<String> listdata1 = new ArrayList<String>();
 			JsonParser parser = new JsonParser();
-			JsonArray jArray1 = parser.parse(line).getAsJsonArray();
+			JsonArray jArray1 = parser.parse(record).getAsJsonArray();
 			if (jArray1 != null) { 
 				for (int i=0; i < jArray1.size(); i++){ 
 					listdata1.add(jArray1.get(i).toString());
@@ -122,17 +105,9 @@ public class SelectionSentHadoop extends Configured implements Tool {
 			}
 			language = "lang:" +  language;
 
-			String text = listdata1.get(19);
+			String fileName = line.substring(0, line.indexOf(","));
 
-			String filter = filtersMap.get(0);
-			System.out.println("record:" + value.toString());
-			if(language.equals(filter)) {
-				SentimentClassifier sentClassifier = new SentimentClassifier();
-				String sent = sentClassifier.classify(text);
-				output.collect(new Text(language), new Text(sent));
-			}
-			long end = System.currentTimeMillis();
-			MapTask.increaseMapFunctionTime(end-start);
+			output.collect(new Text(fileName+","+language), new Text(record));
 		}
 	}
 
@@ -141,25 +116,39 @@ public class SelectionSentHadoop extends Configured implements Tool {
 	 */
 	public static class Reduce extends MapReduceBase
 	implements Reducer<Text, Text, Text, Text> {
-
-		public void reduce(Text key, Iterator<Text> values,
-				OutputCollector<Text, Text> output, 
+		public void reduce(Text key, Iterator<Text> values, OutputCollector<Text, Text> output, 
 				Reporter reporter) throws IOException {
-
-			HashMap<String, Integer> sentiments = new HashMap<String, Integer>();
-
+			String keyS = key.toString();
+			String fileName = keyS.substring(0, keyS.indexOf(","));
 			while (values.hasNext()) {
-				String sent = values.next().toString();
-				Integer cnt = sentiments.get(sent);
-				if (cnt == null) {
-					cnt = new Integer(1);
-					sentiments.put(sent, cnt);
-				}
-				else {
-					sentiments.put(sent, new Integer(cnt.intValue()+1));
-				}
+				String valueS = values.next().toString();
+				output.collect(new Text(valueS), new Text(fileName));
 			}
-			output.collect(key, new Text(sentiments.toString()));
+		}
+	}
+
+
+	public static class NodeNameBasedMultipleTextOutputFormat extends MultipleTextOutputFormat<Text, Text> {
+		@Override
+		protected String generateFileNameForKeyValue(Text key, Text value, String name) {
+			value.set("");
+			return name + "/" + value.toString();
+		}
+	}
+
+	public static class MyPartitioner implements Partitioner<Text, Text> {	
+		public MyPartitioner(){}
+
+		@Override
+		public void configure(JobConf job) {			
+		}
+
+		@Override
+		public int getPartition(Text key, Text value, int numPartitions) {
+			String keyS = key.toString();
+			String fileName = keyS.substring(0, keyS.indexOf(","));
+			int number = Integer.parseInt(fileName.substring(0, fileName.indexOf("_")));
+			return number%20;
 		}
 	}
 
@@ -176,34 +165,18 @@ public class SelectionSentHadoop extends Configured implements Tool {
 	 *                     job tracker.
 	 */
 	public int run(String[] args) throws Exception {
-		JobConf conf = new JobConf(getConf(), SelectionSentHadoop.class);
+		JobConf conf = new JobConf(getConf(), SortHadoop.class);
 
 		/*mgferreira*/
-		String jobName = args[0];
-		conf.setJobName(jobName);
-		conf.set("jobName", jobName);
 
-		String blocksPerSplit = args[1];
-		if(blocksPerSplit.contains("-")) {
-			conf.setBooleanIfUnset("equal.splits", false);
-		}
-		else {
-			conf.setBooleanIfUnset("equal.splits", true);
-		}
-		conf.setIfUnset("blocks.per.split", blocksPerSplit);
-
-		String localityFirst = args[2];
-		if (localityFirst.equals("true")) {
-			conf.setBooleanIfUnset("mapred.locality.or.biggest.tasks.first", true);
-		}
-		else {
-			conf.setBooleanIfUnset("mapred.locality.or.biggest.tasks.first", false);
-		}
+		conf.setIfUnset("useIndexes", "false");
+		conf.setBooleanIfUnset("equal.splits", true);
+		conf.setIfUnset("blocks.per.split", "1");
 
 		String relevantAttrs = "";
 		String filteredAttrs = "";
 
-		BufferedReader br = new BufferedReader(new FileReader(args[3]));
+		BufferedReader br = new BufferedReader(new FileReader(args[1]));
 		String pred;
 		int n = 0;
 		while ((pred = br.readLine()) != null) {
@@ -229,33 +202,15 @@ public class SelectionSentHadoop extends Configured implements Tool {
 
 		System.out.println("relevantAttrs: " + relevantAttrs);
 		System.out.println("filteredAttrs: " + filteredAttrs);
-
-		/*for (String s : filtersANDrelevantAttrs) {
-			System.out.println(s);
-			String absAttr = "";
-			if(s.contains("=")) {
-				absAttr = s.split("=")[0];
-				String relativeAttrANDfilter = s.split("=")[1];
-				filters += relativeAttrANDfilter + ",";
-				filtersForMapFunction += n + "-" + s.split("=")[1].split("-")[1] + ",";
-			}
-			else {
-				absAttr = s;
-			}
-			relevantAttrs += absAttr + ":";
-			n++;
-		}*/
 		conf.setIfUnset("relevantAttrs", relevantAttrs);
+		conf.set("jobName", "sort");
 		if (!filteredAttrs.equals("")) {
 			conf.setIfUnset("filteredAttrs", filteredAttrs);
 		}
 
-		conf.setIfUnset("useIndexes", args[4]);
-
-
-		String[] argsN = new String[args.length-5];
-		for (int i = 5; i < args.length; i++) {
-			argsN[i-5] = args[i];
+		String[] argsN = new String[args.length-2];
+		for (int i = 2; i < args.length; i++) {
+			argsN[i-2] = args[i];
 		}
 
 		// the keys are words (strings)
@@ -265,7 +220,10 @@ public class SelectionSentHadoop extends Configured implements Tool {
 
 		conf.setMapperClass(MapClass.class);
 		conf.setReducerClass(Reduce.class);
+		conf.setOutputFormat(NodeNameBasedMultipleTextOutputFormat.class);
 		conf.setInputFormat(xInputFormat.class);
+		conf.setNumReduceTasks(20);
+		conf.setPartitionerClass(MyPartitioner.class);
 
 		List<String> other_args = new ArrayList<String>();
 		for(int i=0; i < argsN.length; ++i) {
@@ -301,9 +259,8 @@ public class SelectionSentHadoop extends Configured implements Tool {
 
 
 	public static void main(String[] args) throws Exception {
-		int res = ToolRunner.run(new Configuration(), new SelectionSentHadoop(), args);
+		int res = ToolRunner.run(new Configuration(), new SortHadoop(), args);
 		System.exit(res);
 	}
+
 }
-
-

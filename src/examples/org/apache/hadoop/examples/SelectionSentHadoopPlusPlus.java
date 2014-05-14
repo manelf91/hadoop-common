@@ -41,6 +41,7 @@ import org.apache.hadoop.mapred.Mapper;
 import org.apache.hadoop.mapred.OutputCollector;
 import org.apache.hadoop.mapred.Reducer;
 import org.apache.hadoop.mapred.Reporter;
+import org.apache.hadoop.mapred.xRecordReader;
 import org.apache.hadoop.mapred.lib.xInputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
@@ -59,7 +60,7 @@ import com.google.gson.JsonParser;
  * To run: bin/hadoop jar build/hadoop-examples.jar wordcount
  *            [-m <i>maps</i>] [-r <i>reduces</i>] <i>in-dir</i> <i>out-dir</i> 
  */
-public class SelectionSentHadoop extends Configured implements Tool {
+public class SelectionSentHadoopPlusPlus extends Configured implements Tool {
 
 
 	/**
@@ -125,11 +126,12 @@ public class SelectionSentHadoop extends Configured implements Tool {
 			String text = listdata1.get(19);
 
 			String filter = filtersMap.get(0);
-			System.out.println("record:" + value.toString());
 			if(language.equals(filter)) {
 				SentimentClassifier sentClassifier = new SentimentClassifier();
 				String sent = sentClassifier.classify(text);
 				output.collect(new Text(language), new Text(sent));
+			} else {
+				xRecordReader.relevantBlock = -1;
 			}
 			long end = System.currentTimeMillis();
 			MapTask.increaseMapFunctionTime(end-start);
@@ -176,7 +178,7 @@ public class SelectionSentHadoop extends Configured implements Tool {
 	 *                     job tracker.
 	 */
 	public int run(String[] args) throws Exception {
-		JobConf conf = new JobConf(getConf(), SelectionSentHadoop.class);
+		JobConf conf = new JobConf(getConf(), SelectionSentHadoopPlusPlus.class);
 
 		/*mgferreira*/
 		String jobName = args[0];
@@ -301,7 +303,7 @@ public class SelectionSentHadoop extends Configured implements Tool {
 
 
 	public static void main(String[] args) throws Exception {
-		int res = ToolRunner.run(new Configuration(), new SelectionSentHadoop(), args);
+		int res = ToolRunner.run(new Configuration(), new SelectionSentHadoopPlusPlus(), args);
 		System.exit(res);
 	}
 }
