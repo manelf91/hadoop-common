@@ -36,7 +36,7 @@ public class xIndexUtilsHadoop {
 	public static HashMap<String, Long> index = null;	
 	public static ArrayList<String> blocks = new ArrayList<String>();
 
-	public static BlockingQueue<xBlockQueueItem> queue = new LinkedBlockingQueue<xBlockQueueItem>(200);
+	public static BlockingQueue<xBlockQueueItem> queue = new LinkedBlockingQueue<xBlockQueueItem>(3);
 
 	static Thread indexBuilder = null;
 

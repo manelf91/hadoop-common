@@ -466,7 +466,12 @@ class BlockReceiver implements java.io.Closeable, FSConstants {
 					currentCompressedData.close();
 					xBlockQueueItem item = new xBlockQueueItem(block.getBlockId(), currentCompressedData, currentColumn, first);
 					if(datanode.runHadoopPlusPlus == true) {
-						xIndexUtilsHadoop.queue.add(item);
+						try {
+							xIndexUtilsHadoop.queue.put(item);
+						} catch(InterruptedException ie) {
+							System.out.println(ie);
+							ie.printStackTrace();
+						}
 					} else {
 						xIndexUtils.queue.add(item);
 					}
