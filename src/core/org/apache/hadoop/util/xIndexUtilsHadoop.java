@@ -277,9 +277,7 @@ public class xIndexUtilsHadoop {
 		
 		
 		if(language.endsWith("\"")) {
-			System.out.println("before:" + language);
 			language = language.substring(0, language.length()-1);
-			System.out.println("after:" + language);
 		}
 		return language;
 	}
