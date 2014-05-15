@@ -134,8 +134,9 @@ public class SortHadoop extends Configured implements Tool {
 	public static class NodeNameBasedMultipleTextOutputFormat extends MultipleTextOutputFormat<Text, Text> {
 		@Override
 		protected String generateFileNameForKeyValue(Text key, Text value, String name) {
+			String valueS = value.toString();
 			value.set("");
-			return name + "/" + value.toString();
+			return valueS;
 		}
 	}
 
