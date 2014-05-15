@@ -120,7 +120,10 @@ public class SelectionSentHadoop extends Configured implements Tool {
 			} catch(Exception e) {
 				language = user.split(", lang=")[1];
 			}
-			language = "lang:" +  language;
+			language = "lang:" +  language;		
+			if(language.endsWith("\"")) {
+				language = language.substring(0, language.length()-1);
+			}
 
 			String text = listdata1.get(19);
 

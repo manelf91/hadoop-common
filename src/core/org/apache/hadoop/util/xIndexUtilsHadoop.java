@@ -6,19 +6,18 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.io.RandomAccessFile;
-import java.math.BigInteger;
+import java.io.PipedInputStream;
+import java.io.PipedOutputStream;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
-import java.util.BitSet;
 import java.util.HashMap;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -36,7 +35,7 @@ public class xIndexUtilsHadoop {
 	public static HashMap<String, Long> index = null;	
 	public static ArrayList<String> blocks = new ArrayList<String>();
 
-	public static BlockingQueue<xBlockQueueItem> queue = new LinkedBlockingQueue<xBlockQueueItem>(1);
+	public static BlockingQueue<xBlockQueueItem> queue = new LinkedBlockingQueue<xBlockQueueItem>(10);
 
 	static Thread indexBuilder = null;
 
@@ -63,24 +62,24 @@ public class xIndexUtilsHadoop {
 					currentOffset = 0;
 					index = new HashMap<String, Long>(); 
 
-					ByteArrayOutputStream compressedData = item.data;
+					PipedOutputStream pos = item.data;
 
-					ByteArrayOutputStream decompressedData = decompressData(compressedData);
-
-					ByteArrayInputStream bais = new ByteArrayInputStream(decompressedData.toByteArray());
-					BufferedReader br = new BufferedReader(new InputStreamReader(bais, Charset.forName("UTF-8")));
+					PipedInputStream pis = item.pis;
+					GZIPInputStream gzis = new GZIPInputStream(pis);
+					BufferedReader br = new BufferedReader(new InputStreamReader(gzis, Charset.forName("UTF-8")));
 
 					
 					String entry = "";
-					int i = 0;
 					while((entry = br.readLine()) != null) {
 						String newEntry = new String(entry);
 						String attr = extractAttr(newEntry);
 						addEntriesToIndex(attr);
 						currentOffset += (newEntry.getBytes(Charset.forName("UTF-8")).length + 1);
-						i++;
 					}
-					
+					br.close();
+					gzis.close();
+					pis.close();
+					pos.close();
 					writeIndex(blockId.toString());
 				}
 				catch (Exception e) {
@@ -92,6 +91,8 @@ public class xIndexUtilsHadoop {
 	}
 
 	private static void writeIndex(String blockId) {
+		System.out.println("index:");
+		System.out.println(index);
 		try {
 			FileOutputStream fout = new FileOutputStream(indexDir + blockId + ".index");
 			DataOutputStream dos = new DataOutputStream(fout);
@@ -163,16 +164,18 @@ public class xIndexUtilsHadoop {
 	public static ByteArrayOutputStream decompressData(ByteArrayOutputStream compressedData) throws IOException {
 		ByteArrayOutputStream decompressedData = new ByteArrayOutputStream();
 		ByteArrayInputStream bais = new ByteArrayInputStream(compressedData.toByteArray());
-		GZIPInputStream gZIPInputStream = new GZIPInputStream(bais);
+		GZIPInputStream gzis = new GZIPInputStream(bais);
+		BufferedReader br = new BufferedReader(new InputStreamReader(gzis, Charset.forName("UTF-8")));
+	
 
 		int bytes_read;
 		byte[] buffer = new byte[1024];
 
-		while ((bytes_read = gZIPInputStream.read(buffer)) > 0) {
+		while ((bytes_read = gzis.read(buffer)) > 0) {
 			decompressedData.write(buffer, 0, bytes_read);
 		}
 
-		gZIPInputStream.close();
+		gzis.close();
 		decompressedData.close();
 		return decompressedData;
 	}
@@ -271,6 +274,13 @@ public class xIndexUtilsHadoop {
 			language = user.split(", lang=")[1];
 		}
 		language = "lang:" +  language;
+		
+		
+		if(language.endsWith("\"")) {
+			System.out.println("before:" + language);
+			language = language.substring(0, language.length()-1);
+			System.out.println("after:" + language);
+		}
 		return language;
 	}
 }

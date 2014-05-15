@@ -104,6 +104,9 @@ public class SortHadoop extends Configured implements Tool {
 				language = user.split(", lang=")[1];
 			}
 			language = "lang:" +  language;
+			if(language.endsWith("\"")) {
+				language = language.substring(0, language.length()-1);
+			}
 
 			String fileName = line.substring(0, line.indexOf(","));
 

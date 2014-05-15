@@ -11,6 +11,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.PipedInputStream;
+import java.io.PipedOutputStream;
 import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -68,7 +70,7 @@ public class xIndexUtils {
 				try {
 					xBlockQueueItem item = queue.take();
 
-					ByteArrayOutputStream compressedData = item.data;
+					PipedOutputStream pos = item.data;
 					long blockId =item.blockId;
 					Long blockIdL = new Long(blockId);
 					boolean first = item.first;
@@ -79,16 +81,16 @@ public class xIndexUtils {
 
 					int blocknr = updateBlockMap(blockIdL, columnNr);
 
-					ByteArrayOutputStream decompressedData = decompressData(compressedData);
-
 					if(first) {
 						block2split.put(blockIdL, new HashMap<Integer, Long>());
 						blockIdOfFirstBlock = blockIdL;
 						nBlocks++;
 					}
 
-					ByteArrayInputStream bais = new ByteArrayInputStream(decompressedData.toByteArray());
-					BufferedReader br = new BufferedReader(new InputStreamReader(bais, Charset.forName("UTF-8")));
+
+					PipedInputStream pis = item.pis;
+					GZIPInputStream gzis = new GZIPInputStream(pis);
+					BufferedReader br = new BufferedReader(new InputStreamReader(gzis, Charset.forName("UTF-8")));
 
 					String entry = "";
 					while((entry = br.readLine()) != null) {
@@ -100,7 +102,11 @@ public class xIndexUtils {
 					split.put(columnNr, blockIdL);
 					//xLog.print("Added columnNr " + columnNr.intValue() + " to index");
 
-					closeIndexFiles(columnNr);
+					br.close();
+					gzis.close();
+					pis.close();
+					pos.close();
+					writeIndex(columnNr);
 				}
 				catch (Exception e) {
 					e.printStackTrace();
@@ -145,7 +151,7 @@ public class xIndexUtils {
 		return "/mnt/indexDir";
 	}
 
-	public static void closeIndexFiles(Integer columnNr) {
+	public static void writeIndex(Integer columnNr) {
 		ArrayList<String> filesList = new ArrayList<String>();
 		FileOutputStream fout;
 		DataOutputStream dos;

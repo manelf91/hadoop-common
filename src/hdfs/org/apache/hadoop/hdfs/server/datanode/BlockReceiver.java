@@ -28,6 +28,8 @@ import java.io.FileDescriptor;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.PipedInputStream;
+import java.io.PipedOutputStream;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -101,7 +103,8 @@ class BlockReceiver implements java.io.Closeable, FSConstants {
 	public boolean createIndex = false;
 	public int currentColumn;
 	public boolean first;
-	public ByteArrayOutputStream currentCompressedData = new ByteArrayOutputStream();
+	PipedOutputStream currentPipeOutStream = null;
+	public boolean firstPacketInBlock = true;
 
 	BlockReceiver(Block block, DataInputStream in, String inAddr,
 			String myAddr, boolean isRecovery, String clientName, 
@@ -461,10 +464,12 @@ class BlockReceiver implements java.io.Closeable, FSConstants {
 
 		if (len == 0) {
 			LOG.debug("Receiving empty packet for " + block);
-			if(createIndex) {						
-				if(lastPacketInBlock) {
-					currentCompressedData.close();
-					xBlockQueueItem item = new xBlockQueueItem(block.getBlockId(), currentCompressedData, currentColumn, first);
+			if(createIndex) {
+				if(firstPacketInBlock) {
+					currentPipeOutStream = new PipedOutputStream();
+					PipedInputStream pis = new PipedInputStream(currentPipeOutStream, 100*1024*1024);
+					xBlockQueueItem item = new xBlockQueueItem(block.getBlockId(), currentPipeOutStream, pis, currentColumn, first);
+
 					if(datanode.runHadoopPlusPlus == true) {
 						try {
 							xIndexUtilsHadoop.queue.put(item);
@@ -475,7 +480,12 @@ class BlockReceiver implements java.io.Closeable, FSConstants {
 					} else {
 						xIndexUtils.queue.add(item);
 					}
-					currentCompressedData = new ByteArrayOutputStream();
+				}
+				firstPacketInBlock = false;
+
+				if(lastPacketInBlock) {
+					currentPipeOutStream.close();
+					firstPacketInBlock = true;
 				}
 			}
 		} else {
@@ -510,20 +520,30 @@ class BlockReceiver implements java.io.Closeable, FSConstants {
 					//finally write to the disk :
 					out.write(pktBuf, dataOff, len);
 
-					/* mgferreira */
 					if(createIndex) {
-						byte[] copy = Arrays.copyOf(pktBuf, pktBuf.length);
-						currentCompressedData.write(copy, dataOff, len);
-						currentCompressedData.flush();
-						if(lastPacketInBlock) {
-							currentCompressedData.close();
-							xBlockQueueItem item = new xBlockQueueItem(block.getBlockId(), currentCompressedData, currentColumn, first);
+						if(firstPacketInBlock) {
+							currentPipeOutStream = new PipedOutputStream();
+							PipedInputStream pis = new PipedInputStream(currentPipeOutStream, 100*1024*1024);
+							xBlockQueueItem item = new xBlockQueueItem(block.getBlockId(), currentPipeOutStream, pis, currentColumn, first);
+
 							if(datanode.runHadoopPlusPlus == true) {
-								xIndexUtilsHadoop.queue.add(item);
+								try {
+									xIndexUtilsHadoop.queue.put(item);
+								} catch(InterruptedException ie) {
+									System.out.println(ie);
+									ie.printStackTrace();
+								}
 							} else {
 								xIndexUtils.queue.add(item);
 							}
-							currentCompressedData = new ByteArrayOutputStream();
+						}
+						currentPipeOutStream.write(pktBuf, dataOff, len);
+						currentPipeOutStream.flush();
+						firstPacketInBlock = false;
+
+						if(lastPacketInBlock) {
+							currentPipeOutStream.close();
+							firstPacketInBlock = true;
 						}
 					}
 
