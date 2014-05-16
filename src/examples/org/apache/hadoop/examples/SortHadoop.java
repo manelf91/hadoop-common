@@ -152,7 +152,7 @@ public class SortHadoop extends Configured implements Tool {
 		public int getPartition(Text key, Text value, int numPartitions) {
 			String keyS = key.toString();
 			String fileName = keyS.substring(0, keyS.indexOf(","));
-			int number = Integer.parseInt(fileName.substring(0, fileName.indexOf("_")));
+			int number = Integer.parseInt(fileName.substring(0, fileName.indexOf("t")));
 			return number%20;
 		}
 	}
