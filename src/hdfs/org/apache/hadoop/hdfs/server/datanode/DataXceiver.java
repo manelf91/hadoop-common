@@ -253,7 +253,7 @@ class DataXceiver implements Runnable, FSConstants {
 	}
 
 	private void getOffset(DataInputStream in) throws IOException {
-		Long blockId = in.readLong();
+		long blockId = in.readLong();
 		ObjectInputStream objIn = new ObjectInputStream(in);
 		HashMap<Integer, String> filtersMap = null;
 		try {

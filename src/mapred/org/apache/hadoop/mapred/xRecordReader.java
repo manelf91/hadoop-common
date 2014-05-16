@@ -135,7 +135,7 @@ public class xRecordReader implements RecordReader<LongWritable, Text> {
 		if(tweetFileOffset == -2) {
 			org.apache.hadoop.util.LineReader.conf = job;
 			DistributedFileSystem dfs = (DistributedFileSystem) fs;
-			tweetFileOffset = dfs.dfs.getOffset(split.getLocations()[0], currentBlockId+"");
+			tweetFileOffset = dfs.dfs.getOffset(split.getLocations()[0], currentBlockId);
 		}
 		org.apache.hadoop.util.LineReader.remoteReadAppBlock = false;
 

@@ -33,7 +33,7 @@ public class xIndexUtilsHadoop {
 
 	// <<attribute value, offset>>
 	public static HashMap<String, Long> index = null;	
-	public static ArrayList<String> blocks = new ArrayList<String>();
+	public static ArrayList<Long> blocks = new ArrayList<Long>();
 
 	public static BlockingQueue<xBlockQueueItem> queue = new LinkedBlockingQueue<xBlockQueueItem>(10);
 
@@ -58,7 +58,7 @@ public class xIndexUtilsHadoop {
 				try {
 					xBlockQueueItem item = queue.take();
 					Long blockId = new Long(item.blockId);
-					blocks.add(blockId+"");
+					blocks.add(blockId);
 					currentOffset = 0;
 					index = new HashMap<String, Long>(); 
 
@@ -184,7 +184,7 @@ public class xIndexUtilsHadoop {
 			//xLog.print("xIndexUtils: There are no filters. Block is relevant");
 			return 0;
 		}
-		if(!blocks.contains(blockId+"")) {
+		if(!blocks.contains(blockId)) {
 			//xLog.print("xIndexUtilsHadoop: Remote block");
 			return -2;
 		}
@@ -219,7 +219,7 @@ public class xIndexUtilsHadoop {
 
 	public static int calcIndexSize() {
 		int size = 0;
-			for(String blockId : blocks) {
+			for(Long blockId : blocks) {
 				File f = new File(indexDir + blockId + ".index");
 				size += f.length();
 		}

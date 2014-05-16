@@ -148,7 +148,7 @@ public class DFSClient implements FSConstants, java.io.Closeable {
 						false);  
 	}
 	
-	public long getOffset(String dest, String blockId) throws IOException {
+	public long getOffset(String dest, long blockId) throws IOException {
 		InetSocketAddress targetAddr = NetUtils.createSocketAddr(dest + ":50010");
 		Socket s1 = socketFactory.createSocket();
 		LOG.debug("Connecting to " + targetAddr);
@@ -158,7 +158,7 @@ public class DFSClient implements FSConstants, java.io.Closeable {
 
 		out.writeShort(DataTransferProtocol.DATA_TRANSFER_VERSION );
 		out.write(DataTransferProtocol.OP_GET_OFFSET);
-		Text.writeString(out, blockId);
+		out.writeLong(blockId);
 		HashMap<Integer, String> map = xIndexUtilsHadoop.buildFiltersMap(LineReader.conf);
 		ObjectOutputStream objOut = new ObjectOutputStream(out);
 		objOut.writeObject(map);
