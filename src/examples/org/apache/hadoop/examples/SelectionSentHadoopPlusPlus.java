@@ -186,7 +186,7 @@ public class SelectionSentHadoopPlusPlus extends Configured implements Tool {
 		/*mgferreira*/
 		String jobName = args[0];
 		conf.setJobName(jobName);
-		conf.set("jobName", jobName);
+		conf.set("jobName", "hadoopplusplus");
 
 		String blocksPerSplit = args[1];
 		if(blocksPerSplit.contains("-")) {
