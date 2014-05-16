@@ -23,6 +23,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -44,6 +45,7 @@ import org.apache.hadoop.mapred.OutputCollector;
 import org.apache.hadoop.mapred.Reducer;
 import org.apache.hadoop.mapred.Reporter;
 import org.apache.hadoop.mapred.TextOutputFormat;
+import org.apache.hadoop.mapred.lib.MultipleOutputs;
 import org.apache.hadoop.mapred.lib.MultipleTextOutputFormat;
 import org.apache.hadoop.mapred.lib.xInputFormat;
 import org.apache.hadoop.mapred.Partitioner;
@@ -69,22 +71,16 @@ public class Sort2 extends Configured implements Tool {
 	public static class MapClass extends MapReduceBase
 	implements Mapper<LongWritable, Text, Text, Text> {
 
-		private Text word = new Text();
-		int threadn = -1;
-
 		public void map(LongWritable key, Text value, 
 				OutputCollector<Text, Text> output, 
 				Reporter reporter) throws IOException {
 			String line = value.toString();
 
-			String keyS = line.substring(line.indexOf(","), line.indexOf(";$;#;"));
-			String valueS = line.substring(line.indexOf(";$;#;")+5);
-			String node = line.substring(0, line.indexOf(","));
 			String all = line.substring(line.indexOf(",")+1);
-
-			threadn = (threadn + 1) % 2;
-			word.set(node + keyS);
-			output.collect(word, new Text(valueS));
+			String language = line.substring(line.indexOf(",")+1, line.indexOf(";$;#;"));
+			String text = line.substring(line.indexOf(";$;#;")+5);
+			String fileName = line.substring(0, line.indexOf(","));
+			output.collect(new Text(fileName+","+language), new Text(text));
 		}
 	}
 
@@ -93,16 +89,55 @@ public class Sort2 extends Configured implements Tool {
 	 */
 	public static class Reduce extends MapReduceBase
 	implements Reducer<Text, Text, Text, Text> {
-		public void reduce(Text key, Iterator<Text> values, OutputCollector<Text, Text> output, 
-				Reporter reporter) throws IOException {
+		private MultipleOutputs mos;
+		private HashMap<String, HashMap<String, ArrayList<Long>>> offsets;
+		private long currentOffsetText;
+		private long currentOffsetLang;
+		private Reporter reporter;
 
-			System.out.println("begin key" + key.toString());
-			while (values.hasNext()) {
-				String valueS = values.next().toString();
-				System.out.println("value:" + valueS);
-				output.collect(key, new Text(valueS));
+		public void configure(JobConf conf) {
+			mos = new MultipleOutputs(conf);
+			offsets = new HashMap<String, HashMap<String, ArrayList<Long>>>();
+			currentOffsetText = 0;
+			currentOffsetLang = 0;
+		}
+
+		public void reduce(Text key, Iterator<Text> values, OutputCollector<Text, Text> output, Reporter reporter) throws IOException {
+			this.reporter = reporter;
+			String keyS = key.toString();
+			String fileName = keyS.substring(0, keyS.indexOf(","));
+			fileName = fileName.substring(0, fileName.length()-3);
+			fileName = fileName.replace("_", "");
+			
+			HashMap<String, ArrayList<Long>> offsetsForThisFile = offsets.get(fileName);
+			if(offsetsForThisFile == null) {
+				offsetsForThisFile = new HashMap<String, ArrayList<Long>>();
+				offsets.put(fileName, offsetsForThisFile);
 			}
-			System.out.println("end" + key.toString());
+
+			while (values.hasNext()) {
+				String text = values.next().toString();
+				String language = keyS.substring(keyS.indexOf(",") + 1);
+				
+				if(!offsetsForThisFile.containsKey(language)) {
+					ArrayList<Long> offsetsForThisEntry = new ArrayList<Long>();
+					offsetsForThisEntry.add(currentOffsetLang);
+					offsetsForThisEntry.add(currentOffsetText);
+					offsetsForThisFile.put(language, offsetsForThisEntry);
+				}
+
+				mos.getCollector("data", fileName + "text", reporter).collect(new Text(text), new Text(""));
+				mos.getCollector("data", fileName + "lang", reporter).collect(new Text(language), new Text(""));
+				currentOffsetText += (text.getBytes(Charset.forName("UTF-8")).length + 1);
+				currentOffsetLang += (language.getBytes(Charset.forName("UTF-8")).length + 1);
+			}
+		}
+
+		public void close() throws IOException {
+			for(String fileName : offsets.keySet()) {
+				mos.getCollector("index", fileName + "index", reporter).collect(new Text(offsets.get(fileName).toString()), new Text(""));
+			}
+			mos.close();
 		}
 	}
 
@@ -119,29 +154,18 @@ public class Sort2 extends Configured implements Tool {
 	}
 
 	public static class MyPartitioner implements Partitioner<Text, Text> {
-
-		HashMap<String, Integer> partitions = new HashMap<String, Integer>();
-		
 		public MyPartitioner(){}
-		
+
 		@Override
 		public void configure(JobConf job) {
-			String nodes = job.get("nodes");
-			String[] nodeList = nodes.split(",");
-			int i = 0;
-			for(String node : nodeList) {
-				partitions.put(node, new Integer(i));
-				i++;
-			}
-			System.out.println(partitions.toString());
 		}
 
 		@Override
 		public int getPartition(Text key, Text value, int numPartitions) {
 			String keyS = key.toString();
-			String node = keyS.substring(0, keyS.indexOf(","));
-			System.out.println(node);
-			return partitions.get(node);
+			String fileName = keyS.substring(0, keyS.indexOf(","));
+			int number = Integer.parseInt(fileName.substring(0, fileName.indexOf("_")));
+			return number%20;
 		}
 
 	}
@@ -169,15 +193,6 @@ public class Sort2 extends Configured implements Tool {
 
 		String relevantAttrs = "";
 		String filteredAttrs = "";
-		
-
-		BufferedReader br1 = new BufferedReader(new FileReader("names"));
-		String node;
-		String nodes = "";
-		while ((node = br1.readLine()) != null) {
-			nodes += node + ",";
-		}
-		conf.setIfUnset("nodes", nodes);
 
 		BufferedReader br = new BufferedReader(new FileReader(args[1]));
 		String pred;
@@ -223,10 +238,13 @@ public class Sort2 extends Configured implements Tool {
 
 		conf.setMapperClass(MapClass.class);
 		conf.setReducerClass(Reduce.class);
-		conf.setOutputFormat(NodeNameBasedMultipleTextOutputFormat.class);
+		//conf.setOutputFormat(NodeNameBasedMultipleTextOutputFormat.class);
 		conf.setInputFormat(xInputFormat.class);
 		conf.setNumReduceTasks(20);
 		conf.setPartitionerClass(MyPartitioner.class);
+
+		MultipleOutputs.addMultiNamedOutput(conf, "data", TextOutputFormat.class, Text.class, Text.class);
+		MultipleOutputs.addMultiNamedOutput(conf, "index", TextOutputFormat.class, Text.class, Text.class);
 
 		List<String> other_args = new ArrayList<String>();
 		for(int i=0; i < argsN.length; ++i) {

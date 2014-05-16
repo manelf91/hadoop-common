@@ -134,7 +134,7 @@ public class SelectionSentHadoopPlusPlus extends Configured implements Tool {
 				String sent = sentClassifier.classify(text);
 				output.collect(new Text(language), new Text(sent));
 			} else {
-				xRecordReader.relevantBlock = -1;
+					xRecordReader.tweetFileOffset = -1;
 			}
 			long end = System.currentTimeMillis();
 			MapTask.increaseMapFunctionTime(end-start);

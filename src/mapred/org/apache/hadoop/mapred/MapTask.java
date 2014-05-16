@@ -1824,7 +1824,7 @@ public class MapTask extends Task {
 
 	public static int relevantRowGroup(long blockId, Configuration job) {
 		if (DFSClient.filters == null) {
-			return 1;
+			return 0;
 		}
 		xLog.print("Map Task: Going to check if block " + blockId + " is relevant...");
 		return umbilicalAux.checkIfRelevantRowGroup(blockId, job);

@@ -135,6 +135,7 @@ public class SortHadoop extends Configured implements Tool {
 		@Override
 		protected String generateFileNameForKeyValue(Text key, Text value, String name) {
 			String valueS = value.toString();
+			valueS = valueS.substring(0, valueS.length()-3);
 			value.set("");
 			return valueS;
 		}
@@ -207,6 +208,7 @@ public class SortHadoop extends Configured implements Tool {
 		System.out.println("relevantAttrs: " + relevantAttrs);
 		System.out.println("filteredAttrs: " + filteredAttrs);
 		conf.setIfUnset("relevantAttrs", relevantAttrs);
+		conf.setJobName("sort");
 		conf.set("jobName", "sort");
 		if (!filteredAttrs.equals("")) {
 			conf.setIfUnset("filteredAttrs", filteredAttrs);
@@ -228,6 +230,8 @@ public class SortHadoop extends Configured implements Tool {
 		conf.setInputFormat(xInputFormat.class);
 		conf.setNumReduceTasks(20);
 		conf.setPartitionerClass(MyPartitioner.class);
+		TextOutputFormat.setCompressOutput(conf, true);
+		TextOutputFormat.setOutputCompressorClass(conf, GzipCodec.class);
 
 		List<String> other_args = new ArrayList<String>();
 		for(int i=0; i < argsN.length; ++i) {

@@ -350,12 +350,12 @@ public class xIndexUtils {
 	public static String getIndexStatistics(){
 		return "index size:"+getIndexSize();
 	}
-	
+
 	@StatisticsAnotation
 	public static String getMapFunctionTimeStatistics(){
 		return "time:"+mapFunctionTime;
 	}
-	
+
 	public synchronized static void increaseMapTime(long time) {
 		mapFunctionTime += time;
 	}

@@ -33,7 +33,7 @@ public class xIndexUtilsHadoop {
 
 	// <<attribute value, offset>>
 	public static HashMap<String, Long> index = null;	
-	public static ArrayList<String> blocks = new ArrayList<String>();
+	public static ArrayList<Long> blocks = new ArrayList<Long>();
 
 	public static BlockingQueue<xBlockQueueItem> queue = new LinkedBlockingQueue<xBlockQueueItem>(10);
 
@@ -58,7 +58,7 @@ public class xIndexUtilsHadoop {
 				try {
 					xBlockQueueItem item = queue.take();
 					Long blockId = new Long(item.blockId);
-					blocks.add(blockId.toString());
+					blocks.add(blockId);
 					currentOffset = 0;
 					index = new HashMap<String, Long>(); 
 
@@ -106,7 +106,7 @@ public class xIndexUtilsHadoop {
 		}
 	}
 
-	private static void openIndex(String blockId) {
+	private static void openIndex(Long blockId) {
 		try {
 			FileInputStream fin = new FileInputStream(indexDir + blockId + ".index");
 			ObjectInputStream ois = new ObjectInputStream(fin);
@@ -181,7 +181,7 @@ public class xIndexUtilsHadoop {
 	}
 
 	//-1=irrelevant, 1=relevant, 0=non_local_block
-	public static long checkIfRelevantHadoopTweetFile(HashMap<Integer, String> filters, String blockId) {
+	public static long checkIfRelevantHadoopTweetFile(HashMap<Integer, String> filters, Long blockId) {
 		if(filters.size() == 0) {
 			//xLog.print("xIndexUtils: There are no filters. Block is relevant");
 			return 0;
@@ -221,8 +221,8 @@ public class xIndexUtilsHadoop {
 
 	public static int calcIndexSize() {
 		int size = 0;
-			for(String fileName : blocks) {
-				File f = new File(indexDir + fileName + ".index");
+			for(Long blockId : blocks) {
+				File f = new File(indexDir + blockId + ".index");
 				size += f.length();
 		}
 		return size;

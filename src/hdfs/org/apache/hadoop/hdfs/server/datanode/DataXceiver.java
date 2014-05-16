@@ -33,6 +33,7 @@ import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.TreeMap;
+import java.util.concurrent.locks.ReentrantReadWriteLock.ReadLock;
 
 import org.apache.commons.logging.Log;
 import org.apache.hadoop.hdfs.DFSConfigKeys;
@@ -114,14 +115,6 @@ class DataXceiver implements Runnable, FSConstants {
 				break;
 			case DataTransferProtocol.OP_READ_BLOCK:
 				readBlock( in );
-				datanode.myMetrics.addReadBlockOp(DataNode.now() - startTime);
-				if (local)
-					datanode.myMetrics.incrReadsFromLocalClient();
-				else
-					datanode.myMetrics.incrReadsFromRemoteClient();
-				break;
-			case DataTransferProtocol.OP_READ_APPBLOCK:
-				readAppBlock( in );
 				datanode.myMetrics.addReadBlockOp(DataNode.now() - startTime);
 				if (local)
 					datanode.myMetrics.incrReadsFromLocalClient();
@@ -259,122 +252,8 @@ class DataXceiver implements Runnable, FSConstants {
 				}
 	}
 
-	/*mgferreira*/
-	private void readAppBlock(DataInputStream in) throws IOException {
-		//
-		// Read in the header
-		//
-
-		/*mgferreira*/
-		long firstBlockId = in.readLong();
-		ObjectInputStream objIn = new ObjectInputStream(in);
-		HashMap<Integer, String> filtersMap = null;
-		try {
-			filtersMap = (HashMap<Integer, String>) objIn.readObject();
-		} catch (ClassNotFoundException e1) {
-			e1.printStackTrace();
-		}
-
-		long blockId = in.readLong();
-
-		//aceder ao indice
-		Block block = new Block(blockId, 0 , in.readLong());
-
-		long startOffset = in.readLong();
-		long length = in.readLong();
-		String clientName = Text.readString(in);
-		Token<BlockTokenIdentifier> accessToken = new Token<BlockTokenIdentifier>();
-		accessToken.readFields(in);
-		OutputStream baseStream = NetUtils.getOutputStream(s, 
-				datanode.socketWriteTimeout);
-		DataOutputStream out = new DataOutputStream(
-				new BufferedOutputStream(baseStream, SMALL_BUFFER_SIZE));
-
-		if (datanode.isBlockTokenEnabled) {
-			try {
-				datanode.blockTokenSecretManager.checkAccess(accessToken, null, block,
-						BlockTokenSecretManager.AccessMode.READ);
-			} catch (InvalidToken e) {
-				try {
-					out.writeShort(DataTransferProtocol.OP_STATUS_ERROR_ACCESS_TOKEN);
-					out.flush();
-					throw new IOException("Access token verification failed, for client "
-							+ remoteAddress + " for OP_READ_BLOCK for " + block);
-				} finally {
-					IOUtils.closeStream(out);
-				}
-			}
-		}
-		// send the block
-		BlockSender blockSender = null;
-
-		final String clientTraceFmt =
-				clientName.length() > 0 && ClientTraceLog.isInfoEnabled()
-				? String.format(DN_CLIENTTRACE_FORMAT, localAddress, remoteAddress,
-						"%d", "HDFS_READ", clientName, "%d", 
-						datanode.dnRegistration.getStorageID(), block, "%d")
-						: datanode.dnRegistration + " Served " + block + " to " +
-						s.getInetAddress();
-				try {
-					try {
-						blockSender = new BlockSender(block, startOffset, length,
-								true, true, false, datanode, clientTraceFmt);
-					} catch(IOException e) {
-						out.writeShort(DataTransferProtocol.OP_STATUS_ERROR);
-						throw e;
-					}
-
-					/*mgferreira*/
-					byte protocol = 0;
-					//HashMap<Integer, String> filtersMap = xIndexUtils.buildFiltersMap(filters);
-					//xLog.print("DataXceiver: A datanode has requested the row group " + firstBlockId);
-
-					if (xIndexUtils.checkIfRelevantRowGroup(filtersMap, firstBlockId) == -1) {
-						//xLog.print("DataXceiver: The requested the row group " + firstBlockId + " is irrelevant");
-						protocol = DataTransferProtocol.OP_READ_IRRELEVANT_APPBLOCK;
-						out.writeShort(protocol); // send op status
-						out.flush();
-						IOUtils.closeStream(out);
-						return;
-					}
-					//xLog.print("DataXceiver: The requested row group " + firstBlockId + " is relevant");
-					protocol = DataTransferProtocol.OP_STATUS_SUCCESS;
-					out.writeShort(protocol); // send op status
-
-					long read = blockSender.sendBlock(out, baseStream, null); // send data
-
-					if (blockSender.isBlockReadFully()) {
-						// See if client verification succeeded. 
-						// This is an optional response from client.
-						try {
-							if (in.readShort() == DataTransferProtocol.OP_STATUS_CHECKSUM_OK  && 
-									datanode.blockScanner != null) {
-								datanode.blockScanner.verifiedByClient(block);
-							}
-						} catch (IOException ignored) {}
-					}
-
-					datanode.myMetrics.incrBytesRead((int) read);
-					datanode.myMetrics.incrBlocksRead();
-				} catch ( SocketException ignored ) {
-					// Its ok for remote side to close the connection anytime.
-					datanode.myMetrics.incrBlocksRead();
-				} catch ( IOException ioe ) {
-					/* What exactly should we do here?
-					 * Earlier version shutdown() datanode if there is disk error.
-					 */
-					LOG.warn(datanode.dnRegistration +  ":Got exception while serving " + 
-							block + " to " + s.getInetAddress() + ":\n" + 
-							StringUtils.stringifyException(ioe) );
-					throw ioe;
-				} finally {
-					IOUtils.closeStream(out);
-					IOUtils.closeStream(blockSender);
-				}
-	}
-
 	private void getOffset(DataInputStream in) throws IOException {
-		String blockId = Text.readString(in);
+		Long blockId = in.readLong();
 		ObjectInputStream objIn = new ObjectInputStream(in);
 		HashMap<Integer, String> filtersMap = null;
 		try {
@@ -383,7 +262,12 @@ class DataXceiver implements Runnable, FSConstants {
 			System.out.println(e.getMessage());
 			e.printStackTrace();
 		}
-		long offset = xIndexUtilsHadoop.checkIfRelevantHadoopTweetFile(filtersMap, blockId);
+		long offset = -3;
+		if(datanode.runHadoopPlusPlus == true) {
+			offset = xIndexUtilsHadoop.checkIfRelevantHadoopTweetFile(filtersMap, blockId);
+		} else {
+			offset = xIndexUtils.checkIfRelevantRowGroup(filtersMap, blockId);
+		}
 		OutputStream baseStream = NetUtils.getOutputStream(s, datanode.socketWriteTimeout);
 		DataOutputStream out = new DataOutputStream(new BufferedOutputStream(baseStream, SMALL_BUFFER_SIZE));
 		out.writeLong(offset);
