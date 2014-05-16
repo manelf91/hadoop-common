@@ -119,14 +119,14 @@ public class xRecordReader implements RecordReader<LongWritable, Text> {
 
 	private void openHadoopTweetFile() throws IOException {
 		long currentBlockId = split.getBlocksIds().get(currentRowGroupIndex);
+		final Path file = split.getPaths().get(currentRowGroupIndex);		
 		
 		if(useIndexes) {
-			tweetFileOffset = MapTask.relevantHadoopTweetFile(currentBlockId, job);
+			tweetFileOffset = MapTask.relevantHadoopTweetFile(file.getName(), currentBlockId, job);
 		} else {
 			tweetFileOffset = 0;
 		}
-		
-		final Path file = split.getPaths().get(currentRowGroupIndex);			
+			
 		// open the file and seek to the start of the split
 		FileSystem fs = file.getFileSystem(job);
 		FSDataInputStream fileIn = fs.open(file);
@@ -135,7 +135,7 @@ public class xRecordReader implements RecordReader<LongWritable, Text> {
 		if(tweetFileOffset == -2) {
 			org.apache.hadoop.util.LineReader.conf = job;
 			DistributedFileSystem dfs = (DistributedFileSystem) fs;
-			tweetFileOffset = dfs.dfs.getOffset(split.getLocations()[0], currentBlockId);
+			tweetFileOffset = dfs.dfs.getOffsetHadoopPlusPlus(split.getLocations()[0], currentBlockId, file.getName());
 		}
 		org.apache.hadoop.util.LineReader.remoteReadAppBlock = false;
 
@@ -178,7 +178,7 @@ public class xRecordReader implements RecordReader<LongWritable, Text> {
 		long currentBlockId = split.getBlocksIds().get(currentRowGroupIndex);
 
 		if(useIndexes) {
-			tweetFileOffset = MapTask.relevantHadoopTweetFile(currentBlockId, job);
+			tweetFileOffset = MapTask.relevantRowGroup(currentBlockId, job);
 		} else {
 			tweetFileOffset = 1;
 		}

@@ -148,6 +148,29 @@ public class DFSClient implements FSConstants, java.io.Closeable {
 						false);  
 	}
 	
+	public long getOffsetHadoopPlusPlus(String dest, long blockId, String fileName) throws IOException {
+		InetSocketAddress targetAddr = NetUtils.createSocketAddr(dest + ":50010");
+		Socket s1 = socketFactory.createSocket();
+		LOG.debug("Connecting to " + targetAddr);
+		NetUtils.connect(s1, targetAddr, getRandomLocalInterfaceAddr(), socketTimeout);
+		s1.setSoTimeout(socketTimeout);
+		DataOutputStream out = new DataOutputStream(new BufferedOutputStream(NetUtils.getOutputStream(s1,HdfsConstants.WRITE_TIMEOUT)));
+
+		out.writeShort(DataTransferProtocol.DATA_TRANSFER_VERSION );
+		out.write(DataTransferProtocol.OP_GET_OFFSET);
+		out.writeLong(blockId);
+		Text.writeString(out, fileName);
+		HashMap<Integer, String> map = xIndexUtilsHadoop.buildFiltersMap(LineReader.conf);
+		ObjectOutputStream objOut = new ObjectOutputStream(out);
+		objOut.writeObject(map);
+		out.flush();
+
+		DataInputStream in = new DataInputStream(new BufferedInputStream(NetUtils.getInputStream(s1)));
+		long offset = in.readLong();
+		s1.close();
+		return offset;
+	}
+	
 	public long getOffset(String dest, long blockId) throws IOException {
 		InetSocketAddress targetAddr = NetUtils.createSocketAddr(dest + ":50010");
 		Socket s1 = socketFactory.createSocket();
@@ -169,6 +192,7 @@ public class DFSClient implements FSConstants, java.io.Closeable {
 		s1.close();
 		return offset;
 	}
+	
 
 	private static ClientProtocol createNamenode(ClientProtocol rpcNamenode,
 			Configuration conf) throws IOException {

@@ -94,7 +94,7 @@ public class SelectionSentHadoopPlusPlus extends Configured implements Tool {
 			String line = value.toString();
 
 			long start = System.currentTimeMillis();
-
+		
 			ArrayList<String> listdata1 = new ArrayList<String>();
 			JsonParser parser = new JsonParser();
 			JsonArray jArray1 = parser.parse(line).getAsJsonArray();

@@ -143,7 +143,7 @@ public class IsolationRunner {
 	public void increaseMapFunctionTime(long time) {}
 
 	@Override
-	public long checkIfRelevantHadoopTweetFile(long blockId, Configuration job) {
+	public long checkIfRelevantHadoopTweetFile(String fileName, Long blockId, Configuration job) {
 		// TODO Auto-generated method stub
 		return 0;
 	}

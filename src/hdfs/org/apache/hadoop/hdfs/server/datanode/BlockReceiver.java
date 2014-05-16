@@ -395,9 +395,9 @@ class BlockReceiver implements java.io.Closeable, FSConstants {
 			}
 
 			//now read:
-				while (toRead > 0) {
-					toRead -= readToBuf(toRead);
-				}
+			while (toRead > 0) {
+				toRead -= readToBuf(toRead);
+			}
 		}
 
 		if (buf.remaining() > pktSize) {
@@ -466,26 +466,30 @@ class BlockReceiver implements java.io.Closeable, FSConstants {
 			LOG.debug("Receiving empty packet for " + block);
 			if(createIndex) {
 				if(firstPacketInBlock) {
-					currentPipeOutStream = new PipedOutputStream();
-					PipedInputStream pis = new PipedInputStream(currentPipeOutStream, 100*1024*1024);
-					xBlockQueueItem item = new xBlockQueueItem(block.getBlockId(), currentPipeOutStream, pis, currentColumn, first);
 
-					if(datanode.runHadoopPlusPlus == true) {
+					if(datanode.runHadoopPlusPlus == false) {
+						currentPipeOutStream = new PipedOutputStream();
+						PipedInputStream pis = new PipedInputStream(currentPipeOutStream, 100*1024*1024);
+						xBlockQueueItem item = new xBlockQueueItem(block.getBlockId(), currentPipeOutStream, pis, currentColumn, first);
+
 						try {
-							xIndexUtilsHadoop.queue.put(item);
-						} catch(InterruptedException ie) {
-							System.out.println(ie);
-							ie.printStackTrace();
+							xIndexUtils.queue.put(item);
+						} catch (InterruptedException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+
+						firstPacketInBlock = false;
+
+						if(lastPacketInBlock) {
+							currentPipeOutStream.close();
+							firstPacketInBlock = true;
 						}
 					} else {
-						xIndexUtils.queue.add(item);
+						if(lastPacketInBlock) {
+							xIndexUtilsHadoop.blocks.add(block.getBlockId());
+						}
 					}
-				}
-				firstPacketInBlock = false;
-
-				if(lastPacketInBlock) {
-					currentPipeOutStream.close();
-					firstPacketInBlock = true;
 				}
 			}
 		} else {
@@ -521,29 +525,32 @@ class BlockReceiver implements java.io.Closeable, FSConstants {
 					out.write(pktBuf, dataOff, len);
 
 					if(createIndex) {
-						if(firstPacketInBlock) {
-							currentPipeOutStream = new PipedOutputStream();
-							PipedInputStream pis = new PipedInputStream(currentPipeOutStream, 100*1024*1024);
-							xBlockQueueItem item = new xBlockQueueItem(block.getBlockId(), currentPipeOutStream, pis, currentColumn, first);
+						if(datanode.runHadoopPlusPlus == false) {
+							if(firstPacketInBlock) {
+								currentPipeOutStream = new PipedOutputStream();
+								PipedInputStream pis = new PipedInputStream(currentPipeOutStream, 100*1024*1024);
+								xBlockQueueItem item = new xBlockQueueItem(block.getBlockId(), currentPipeOutStream, pis, currentColumn, first);
 
-							if(datanode.runHadoopPlusPlus == true) {
 								try {
-									xIndexUtilsHadoop.queue.put(item);
-								} catch(InterruptedException ie) {
-									System.out.println(ie);
-									ie.printStackTrace();
+									xIndexUtils.queue.put(item);
+								} catch (InterruptedException e) {
+									// TODO Auto-generated catch block
+									e.printStackTrace();
 								}
-							} else {
-								xIndexUtils.queue.add(item);
-							}
-						}
-						currentPipeOutStream.write(pktBuf, dataOff, len);
-						currentPipeOutStream.flush();
-						firstPacketInBlock = false;
 
-						if(lastPacketInBlock) {
-							currentPipeOutStream.close();
-							firstPacketInBlock = true;
+								currentPipeOutStream.write(pktBuf, dataOff, len);
+								currentPipeOutStream.flush();
+								firstPacketInBlock = false;
+
+							}
+							if(lastPacketInBlock) {
+								currentPipeOutStream.close();
+								firstPacketInBlock = true;
+							}
+						} else {
+							if(lastPacketInBlock) {
+								xIndexUtilsHadoop.blocks.add(block.getBlockId());
+							}
 						}
 					}
 
@@ -642,40 +649,40 @@ class BlockReceiver implements java.io.Closeable, FSConstants {
 								Thread.currentThread()));
 				responder.start(); // start thread to processes reponses
 			}
-			
+
 			/* 
 			 * Receive until packet length is zero.
 			 */
-			 while (receivePacket() > 0) {}
+			while (receivePacket() > 0) {}
 
-			 // flush the mirror out
-			 if (mirrorOut != null) {
-				 try {
-					 mirrorOut.writeInt(0); // mark the end of the block
-					 mirrorOut.flush();
-				 } catch (IOException e) {
-					 handleMirrorOutError(e);
-				 }
-			 }
+			// flush the mirror out
+			if (mirrorOut != null) {
+				try {
+					mirrorOut.writeInt(0); // mark the end of the block
+					mirrorOut.flush();
+				} catch (IOException e) {
+					handleMirrorOutError(e);
+				}
+			}
 
-			 // wait for all outstanding packet responses. And then
-			 // indicate responder to gracefully shutdown.
-			 if (responder != null) {
-				 ((PacketResponder)responder.getRunnable()).close();
-			 }
+			// wait for all outstanding packet responses. And then
+			// indicate responder to gracefully shutdown.
+			if (responder != null) {
+				((PacketResponder)responder.getRunnable()).close();
+			}
 
-			 // if this write is for a replication request (and not
-			 // from a client), then finalize block. For client-writes, 
-			 // the block is finalized in the PacketResponder.
-			 if (clientName.length() == 0) {
-				 // close the block/crc files
-				 close();
+			// if this write is for a replication request (and not
+			// from a client), then finalize block. For client-writes, 
+			// the block is finalized in the PacketResponder.
+			if (clientName.length() == 0) {
+				// close the block/crc files
+				close();
 
-				 // Finalize the block. Does this fsync()?
-				 block.setNumBytes(offsetInBlock);
-				 datanode.data.finalizeBlock(block);
-				 datanode.myMetrics.incrBlocksWritten();
-			 }
+				// Finalize the block. Does this fsync()?
+				block.setNumBytes(offsetInBlock);
+				datanode.data.finalizeBlock(block);
+				datanode.myMetrics.incrBlocksWritten();
+			}
 
 		} catch (IOException ioe) {
 			LOG.info("Exception in receiveBlock for " + block + " " + ioe);

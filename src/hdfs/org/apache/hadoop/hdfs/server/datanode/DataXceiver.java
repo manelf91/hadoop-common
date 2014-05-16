@@ -253,7 +253,11 @@ class DataXceiver implements Runnable, FSConstants {
 	}
 
 	private void getOffset(DataInputStream in) throws IOException {
+		String fileName = "";
 		long blockId = in.readLong();
+		if(datanode.runHadoopPlusPlus == true) {
+			fileName = Text.readString(in);
+		}
 		ObjectInputStream objIn = new ObjectInputStream(in);
 		HashMap<Integer, String> filtersMap = null;
 		try {
@@ -264,7 +268,7 @@ class DataXceiver implements Runnable, FSConstants {
 		}
 		long offset = -3;
 		if(datanode.runHadoopPlusPlus == true) {
-			offset = xIndexUtilsHadoop.checkIfRelevantHadoopTweetFile(filtersMap, blockId);
+			offset = xIndexUtilsHadoop.checkIfRelevantHadoopTweetFile(filtersMap, fileName, blockId);
 		} else {
 			offset = xIndexUtils.checkIfRelevantRowGroup(filtersMap, blockId);
 		}

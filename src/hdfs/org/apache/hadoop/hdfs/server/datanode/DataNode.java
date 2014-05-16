@@ -331,11 +331,8 @@ public class DataNode extends Configured
 		}
 	}
 	runHadoopPlusPlus = conf.getBoolean("hadoopplusplus", false);
-	System.out.println(runHadoopPlusPlus);
-	if(runHadoopPlusPlus == true) {
-		xIndexUtilsHadoop.initializeIndexBuilderThread();
-	}
-	else {
+	System.out.println("running Hadoop++ ?"  + runHadoopPlusPlus);
+	if(runHadoopPlusPlus == false) {
 		xIndexUtils.initializeIndexBuilderThread();
 	}
 

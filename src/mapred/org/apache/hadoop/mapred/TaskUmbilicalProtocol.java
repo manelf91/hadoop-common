@@ -189,5 +189,6 @@ public interface TaskUmbilicalProtocol extends VersionedProtocol {
 
 	void increaseMapFunctionTime(long time);
 
-	long checkIfRelevantHadoopTweetFile(long blockId, Configuration job);
+	long checkIfRelevantHadoopTweetFile(String fileName, Long blockId,
+			Configuration job);
 }
