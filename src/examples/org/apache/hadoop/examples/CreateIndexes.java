@@ -121,7 +121,7 @@ public class CreateIndexes extends Configured implements Tool {
 			if(!offsets.containsKey(language)) {
 				offsets.put(language, currentOffsetLang);
 			}
-			currentOffsetLang += (language.getBytes(Charset.forName("UTF-8")).length + 1);
+			currentOffsetLang += (record.getBytes(Charset.forName("UTF-8")).length + 1);
 		}
 
 		@Override
