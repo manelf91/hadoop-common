@@ -83,8 +83,9 @@ public class CreateIndexes extends Configured implements Tool {
 		public void map(LongWritable key, Text value, OutputCollector<Text, Text> output, Reporter reporter) throws IOException {
 			this.output = output;
 			String line = value.toString();
-			String record = line.substring(line.indexOf(",")+1);
-
+			String record = new String(line.substring(line.indexOf(",")+1));
+			String recordS = new String(record);
+			System.out.println(record);
 			ArrayList<String> listdata1 = new ArrayList<String>();
 			JsonParser parser = new JsonParser();
 			JsonArray jArray1 = parser.parse(record).getAsJsonArray();
@@ -121,7 +122,7 @@ public class CreateIndexes extends Configured implements Tool {
 			if(!offsets.containsKey(language)) {
 				offsets.put(language, currentOffsetLang);
 			}
-			currentOffsetLang += (record.getBytes(Charset.forName("UTF-8")).length + 1);
+			currentOffsetLang += (recordS.getBytes(Charset.forName("UTF-8")).length + 1);
 		}
 
 		@Override
