@@ -272,6 +272,7 @@ class DataXceiver implements Runnable, FSConstants {
 		} else {
 			offset = xIndexUtils.checkIfRelevantRowGroup(filtersMap, blockId);
 		}
+		
 		OutputStream baseStream = NetUtils.getOutputStream(s, datanode.socketWriteTimeout);
 		DataOutputStream out = new DataOutputStream(new BufferedOutputStream(baseStream, SMALL_BUFFER_SIZE));
 		out.writeLong(offset);

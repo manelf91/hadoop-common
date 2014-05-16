@@ -1830,7 +1830,7 @@ public class MapTask extends Task {
 		return umbilicalAux.checkIfRelevantRowGroup(blockId, job);
 	}
 	
-	public static long relevantHadoopTweetFile(String fileName, Long blockId, Configuration job) {
+	public static long relevantHadoopTweetFile(String fileName, long blockId, Configuration job) {
 		if (DFSClient.filters == null) {
 			return 0;
 		}

@@ -574,7 +574,7 @@ public class LocalJobRunner implements JobSubmissionProtocol {
 	}	
 	
 	@Override
-	public long checkIfRelevantHadoopTweetFile(String fileName, Long blockId, Configuration job) {
+	public long checkIfRelevantHadoopTweetFile(String fileName, long blockId, Configuration job) {
 		// TODO Auto-generated method stub
 		return 0;
 	}

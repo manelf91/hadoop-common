@@ -4635,7 +4635,7 @@ Runnable, TaskTrackerMXBean {
 	}	
 	
 	@Override
-	public long checkIfRelevantHadoopTweetFile(String fileName, Long blockId, Configuration job) {
+	public long checkIfRelevantHadoopTweetFile(String fileName, long blockId, Configuration job) {
 		HashMap<Integer, String> filtersMap = xIndexUtils.buildFiltersMap(job);
 		return xIndexUtilsHadoop.checkIfRelevantHadoopTweetFile(filtersMap, fileName, blockId);
 	}

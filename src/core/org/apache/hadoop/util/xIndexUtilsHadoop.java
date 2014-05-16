@@ -18,6 +18,8 @@ public class xIndexUtilsHadoop {
 
 	private static String indexDir = getIndexDir();
 	public static ArrayList<Long> blocks = new ArrayList<Long>();
+	
+	static int z = 0;
 
 	private static HashMap<String, Long> openIndex(String fileName) {
 		HashMap<String, Long> index = new HashMap<String, Long>();
@@ -83,11 +85,9 @@ public class xIndexUtilsHadoop {
 				String filter = filters.get(attrNr);
 				Long offset = index.get(filter);
 				if(offset == null) {
-					System.out.println("no offset -> irrelevant");
 					return -1;
 				}
 				else {
-					System.out.println("offset = " + offset.longValue());
 					return offset.longValue();
 				}
 			}

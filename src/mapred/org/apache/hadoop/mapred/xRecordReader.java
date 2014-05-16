@@ -229,7 +229,7 @@ public class xRecordReader implements RecordReader<LongWritable, Text> {
 				if (!(codec instanceof SplittableCompressionCodec)) {
 					CompressionInputStream is = codec.createInputStream(fileIn, decompressor);
 					if(tweetFileOffset > 0) {
-						//is.skip(tweetFileOffset);
+						is.skip(tweetFileOffset);
 					}
 					in = new LineReader(is, job);
 					filePosition = fileIn;

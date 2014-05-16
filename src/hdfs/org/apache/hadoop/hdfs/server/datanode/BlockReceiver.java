@@ -465,9 +465,13 @@ class BlockReceiver implements java.io.Closeable, FSConstants {
 		if (len == 0) {
 			LOG.debug("Receiving empty packet for " + block);
 			if(createIndex) {
-				if(firstPacketInBlock) {
-
-					if(datanode.runHadoopPlusPlus == false) {
+				if(datanode.runHadoopPlusPlus == true) {
+					if(lastPacketInBlock) {
+						xIndexUtilsHadoop.blocks.add(block.getBlockId());
+					}
+				}
+				if(datanode.runHadoopPlusPlus == false) {
+					if(firstPacketInBlock) {
 						currentPipeOutStream = new PipedOutputStream();
 						PipedInputStream pis = new PipedInputStream(currentPipeOutStream, 100*1024*1024);
 						xBlockQueueItem item = new xBlockQueueItem(block.getBlockId(), currentPipeOutStream, pis, currentColumn, first);
@@ -485,11 +489,7 @@ class BlockReceiver implements java.io.Closeable, FSConstants {
 							currentPipeOutStream.close();
 							firstPacketInBlock = true;
 						}
-					} else {
-						if(lastPacketInBlock) {
-							xIndexUtilsHadoop.blocks.add(block.getBlockId());
-						}
-					}
+					} 
 				}
 			}
 		} else {
@@ -525,6 +525,11 @@ class BlockReceiver implements java.io.Closeable, FSConstants {
 					out.write(pktBuf, dataOff, len);
 
 					if(createIndex) {
+						if(datanode.runHadoopPlusPlus == true) {
+							if(lastPacketInBlock) {
+								xIndexUtilsHadoop.blocks.add(block.getBlockId());
+							}
+						}
 						if(datanode.runHadoopPlusPlus == false) {
 							if(firstPacketInBlock) {
 								currentPipeOutStream = new PipedOutputStream();
@@ -546,10 +551,6 @@ class BlockReceiver implements java.io.Closeable, FSConstants {
 							if(lastPacketInBlock) {
 								currentPipeOutStream.close();
 								firstPacketInBlock = true;
-							}
-						} else {
-							if(lastPacketInBlock) {
-								xIndexUtilsHadoop.blocks.add(block.getBlockId());
 							}
 						}
 					}
