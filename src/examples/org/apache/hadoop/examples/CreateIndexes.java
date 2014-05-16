@@ -65,7 +65,7 @@ import com.google.gson.JsonParser;
  * To run: bin/hadoop jar build/hadoop-examples.jar wordcount
  *            [-m <i>maps</i>] [-r <i>reduces</i>] <i>in-dir</i> <i>out-dir</i> 
  */
-public class SortHadoop extends Configured implements Tool {
+public class CreateIndexes extends Configured implements Tool {
 
 	/**
 	 * Counts the words in each line.
@@ -73,9 +73,15 @@ public class SortHadoop extends Configured implements Tool {
 	 * (<b>word</b>, <b>1</b>).
 	 */
 	public static class MapClass extends MapReduceBase
-	implements Mapper<LongWritable, Text, Text, Text> {				
+	implements Mapper<LongWritable, Text, Text, Text> {
+		
+		private HashMap<String, Long> offsets = new HashMap<String, Long>();
+		private long currentOffsetLang = 0;
+		OutputCollector<Text, Text> output;
+		String fileName = "";
 
 		public void map(LongWritable key, Text value, OutputCollector<Text, Text> output, Reporter reporter) throws IOException {
+			this.output = output;
 			String line = value.toString();
 			String record = line.substring(line.indexOf(",")+1);
 
@@ -109,10 +115,18 @@ public class SortHadoop extends Configured implements Tool {
 			if(language.endsWith("\"")) {
 				language = language.substring(0, language.length()-1);
 			}
-
 			String fileName = line.substring(0, line.indexOf(","));
+			this.fileName = fileName;
 
-			output.collect(new Text(fileName+","+language), new Text(record));
+			if(!offsets.containsKey(language)) {
+				offsets.put(language, currentOffsetLang);
+			}
+			currentOffsetLang += (language.getBytes(Charset.forName("UTF-8")).length + 1);
+		}
+
+		@Override
+		public void close() throws IOException {
+			output.collect(new Text(fileName), new Text(offsets.toString()));
 		}
 	}
 
@@ -122,49 +136,24 @@ public class SortHadoop extends Configured implements Tool {
 	public static class Reduce extends MapReduceBase
 	implements Reducer<Text, Text, Text, Text> {
 		private MultipleOutputs mos;
-		private HashMap<String, HashMap<String, ArrayList<Long>>> offsets;
-		private long currentOffsetText;
-		private long currentOffsetLang;
-		private Reporter reporter;
 
 		public void configure(JobConf conf) {
 			mos = new MultipleOutputs(conf);
-			offsets = new HashMap<String, HashMap<String, ArrayList<Long>>>();
-			currentOffsetText = 0;
-			currentOffsetLang = 0;
 		}
 
 		public void reduce(Text key, Iterator<Text> values, OutputCollector<Text, Text> output, 
 				Reporter reporter) throws IOException {
-			String keyS = key.toString();
-			String fileName = keyS.substring(0, keyS.indexOf(","));
+			String fileName = key.toString();
 			fileName = fileName.substring(0, fileName.length()-3);
 			fileName = fileName.replace("_", "");
 
-			HashMap<String, ArrayList<Long>> offsetsForThisFile = offsets.get(fileName);
-			if(offsetsForThisFile == null) {
-				offsetsForThisFile = new HashMap<String, ArrayList<Long>>();
-				offsets.put(fileName, offsetsForThisFile);
-			}
 
 			while (values.hasNext()) {
-				String text = values.next().toString();
-				String language = keyS.substring(keyS.indexOf(",") + 1);
-				
-				if(!offsetsForThisFile.containsKey(language)) {
-					ArrayList<Long> offsetsForThisEntry = new ArrayList<Long>();
-					offsetsForThisEntry.add(currentOffsetLang);
-					offsetsForThisEntry.add(currentOffsetText);
-					offsetsForThisFile.put(language, offsetsForThisEntry);
-				}
-				currentOffsetText += (text.getBytes(Charset.forName("UTF-8")).length + 1);
-				currentOffsetLang += (language.getBytes(Charset.forName("UTF-8")).length + 1);
+				String offsets = values.next().toString();
+				mos.getCollector("index", fileName + "index", reporter).collect(new Text(offsets), new Text(""));
 			}
 		}
 		public void close() throws IOException {
-			for(String fileName : offsets.keySet()) {
-				mos.getCollector("index", fileName + "index", reporter).collect(new Text(offsets.get(fileName).toString()), new Text(""));
-			}
 			mos.close();
 		}
 	}
@@ -173,13 +162,11 @@ public class SortHadoop extends Configured implements Tool {
 		public MyPartitioner(){}
 
 		@Override
-		public void configure(JobConf job) {			
-		}
+		public void configure(JobConf job) {}
 
 		@Override
 		public int getPartition(Text key, Text value, int numPartitions) {
-			String keyS = key.toString();
-			String fileName = keyS.substring(0, keyS.indexOf(","));
+			String fileName = key.toString();
 			int number = Integer.parseInt(fileName.substring(0, fileName.indexOf("t")));
 			return number%20;
 		}
@@ -198,7 +185,7 @@ public class SortHadoop extends Configured implements Tool {
 	 *                     job tracker.
 	 */
 	public int run(String[] args) throws Exception {
-		JobConf conf = new JobConf(getConf(), SortHadoop.class);
+		JobConf conf = new JobConf(getConf(), CreateIndexes.class);
 
 		/*mgferreira*/
 
@@ -293,7 +280,7 @@ public class SortHadoop extends Configured implements Tool {
 
 
 	public static void main(String[] args) throws Exception {
-		int res = ToolRunner.run(new Configuration(), new SortHadoop(), args);
+		int res = ToolRunner.run(new Configuration(), new CreateIndexes(), args);
 		System.exit(res);
 	}
 
