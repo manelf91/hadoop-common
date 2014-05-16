@@ -85,7 +85,6 @@ public class CreateIndexes extends Configured implements Tool {
 			String line = value.toString();
 			String record = new String(line.substring(line.indexOf(",")+1));
 			String recordS = new String(record);
-			System.out.println(record);
 			ArrayList<String> listdata1 = new ArrayList<String>();
 			JsonParser parser = new JsonParser();
 			JsonArray jArray1 = parser.parse(record).getAsJsonArray();
