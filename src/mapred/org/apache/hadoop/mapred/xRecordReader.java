@@ -386,7 +386,6 @@ public class xRecordReader implements RecordReader<LongWritable, Text> {
 					extra = split.getPaths().get(currentRowGroupIndex).getName() + ",";
 				}
 				value.set(extra + accumulator.toString());
-				System.out.println(value.toString());
 				pos += newSize;
 
 				n++;

@@ -91,8 +91,6 @@ public class xIndexUtilsHadoop {
 	}
 
 	private static void writeIndex(String blockId) {
-		System.out.println("index:");
-		System.out.println(index);
 		try {
 			FileOutputStream fout = new FileOutputStream(indexDir + blockId + ".index");
 			DataOutputStream dos = new DataOutputStream(fout);
