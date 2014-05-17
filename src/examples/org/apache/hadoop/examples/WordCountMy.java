@@ -45,6 +45,7 @@ import org.apache.hadoop.mapred.Mapper;
 import org.apache.hadoop.mapred.OutputCollector;
 import org.apache.hadoop.mapred.Reducer;
 import org.apache.hadoop.mapred.Reporter;
+import org.apache.hadoop.mapred.xRecordReader;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 
@@ -68,6 +69,8 @@ public class WordCountMy extends Configured implements Tool {
 	implements Mapper<LongWritable, Text, Text, IntWritable> {
 
 		private static HashMap<Integer, String> filtersMap = new HashMap<Integer, String>();
+		private final static IntWritable one = new IntWritable(1);
+		private Text word = new Text();
 
 		public void configure(JobConf job) {        
 			String filters = job.get("filteredAttrs");
@@ -85,8 +88,6 @@ public class WordCountMy extends Configured implements Tool {
 				}
 			}
 		}
-		private final static IntWritable one = new IntWritable(1);
-		private Text word = new Text();
 
 		public void map(LongWritable key, Text value, OutputCollector<Text, IntWritable> output, Reporter reporter) throws IOException {
 			String line = value.toString();
@@ -97,6 +98,7 @@ public class WordCountMy extends Configured implements Tool {
 				int attrNr = entry.getKey().intValue();
 				String filter = entry.getValue();
 				if (!args[attrNr].equals(filter)) {
+					xRecordReader.columnsOffsets = "-1,-1";
 					return;
 				}
 			}

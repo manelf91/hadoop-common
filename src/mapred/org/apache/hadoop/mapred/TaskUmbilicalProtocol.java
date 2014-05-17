@@ -19,6 +19,7 @@
 package org.apache.hadoop.mapred;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.hadoop.conf.Configuration;
@@ -185,10 +186,11 @@ public interface TaskUmbilicalProtocol extends VersionedProtocol {
 
 	
 	/*mgferreira*/
-	int checkIfRelevantRowGroup(long blockId, Configuration job);
-
 	void increaseMapFunctionTime(long time);
 
 	long checkIfRelevantHadoopTweetFile(String fileName, long blockId,
+			Configuration job);
+
+	String checkIfRelevantRowGroup(long blockId, String file,
 			Configuration job);
 }

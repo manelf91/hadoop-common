@@ -50,7 +50,11 @@ public class ExampleDriver {
               "A map/reduce program that counts the words in the input files.");
       pgd.addClass("selectionSentHadoopPlusPlus", SelectionSentHadoopPlusPlus.class,
               "A map/reduce program that counts the words in the input files.");
-      pgd.addClass("createIndexes", CreateIndexes.class,
+      pgd.addClass("wordcountHadoopPlusPlus", WordCountHadoopPlusPlus.class,
+              "A map/reduce program that counts the words in the input files.");
+      pgd.addClass("createIndexesHadoopPlusPlus", CreateIndexesHadoopPlusPlus.class,
+              "A map/reduce program that counts the words in the input files.");
+      pgd.addClass("createIndexesmy", CreateIndexesMy.class,
               "A map/reduce program that counts the words in the input files.");
       pgd.addClass("aggregatewordcount", AggregateWordCount.class, 
                    "An Aggregate based map/reduce program that counts the words in the input files.");

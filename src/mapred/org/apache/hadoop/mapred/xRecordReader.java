@@ -67,8 +67,9 @@ public class xRecordReader implements RecordReader<LongWritable, Text> {
 	private ArrayList<Decompressor> decompressorN = new ArrayList<Decompressor>();
 
 	private int currentRowGroupIndex;
+
 	public static long tweetFileOffset;
-	int n = 0;
+	public static String columnsOffsets;
 
 	public long currentOffset = 0;
 
@@ -79,7 +80,7 @@ public class xRecordReader implements RecordReader<LongWritable, Text> {
 	private xFileSplit split;
 	private Configuration job;
 	private boolean useIndexes = false;
-	
+
 	public static long startTime = 0;
 
 	/**
@@ -120,13 +121,13 @@ public class xRecordReader implements RecordReader<LongWritable, Text> {
 	private void openHadoopTweetFile() throws IOException {
 		long currentBlockId = split.getBlocksIds().get(currentRowGroupIndex);
 		final Path file = split.getPaths().get(currentRowGroupIndex);		
-		
+
 		if(useIndexes) {
 			tweetFileOffset = MapTask.relevantHadoopTweetFile(file.getName(), currentBlockId, job);
 		} else {
 			tweetFileOffset = 0;
 		}
-			
+
 		// open the file and seek to the start of the split
 		FileSystem fs = file.getFileSystem(job);
 		FSDataInputStream fileIn = fs.open(file);
@@ -137,7 +138,6 @@ public class xRecordReader implements RecordReader<LongWritable, Text> {
 			DistributedFileSystem dfs = (DistributedFileSystem) fs;
 			tweetFileOffset = dfs.dfs.getOffsetHadoopPlusPlus(split.getLocations()[0], currentBlockId, file.getName());
 		}
-		org.apache.hadoop.util.LineReader.remoteReadAppBlock = false;
 
 		if(tweetFileOffset == -3) {
 			throw new IOException("mgferreira: offset == -3 ?");
@@ -175,43 +175,37 @@ public class xRecordReader implements RecordReader<LongWritable, Text> {
 	}
 
 	private void openRowGroup() throws IOException {
-		long currentBlockId = split.getBlocksIds().get(currentRowGroupIndex);
+		long currentBlockId = split.getBlocksIds().get(currentRowGroupIndex);			
+		FIRST_COLUMN_IDENTIFIER = job.get("first.column.identifier");		
+		ArrayList<Path> pathsToBlocksOfRelevantSplit = getPathsToRelevantSplit(split.getPaths().get(currentRowGroupIndex), job);
+		final Path file = pathsToBlocksOfRelevantSplit.remove(0);
 
+		// open the file and seek to the start of the split
+		FileSystem fs = file.getFileSystem(job);
 		if(useIndexes) {
-			tweetFileOffset = MapTask.relevantRowGroup(currentBlockId, job);
+			columnsOffsets = MapTask.relevantRowGroup(currentBlockId, file.getName(), job);
 		} else {
-			tweetFileOffset = 1;
+			columnsOffsets = "0,0";
 		}
 
 		array2inputStreams.clear();
 		inN.clear();
 		posN.clear();
 
-		xLog.print("xRecordReader: block " + currentBlockId + " relevance: " + tweetFileOffset);
-		if(tweetFileOffset == 0){
-			org.apache.hadoop.util.LineReader.remoteReadAppBlock = true;
+		xLog.print("xRecordReader: block " + currentBlockId + " relevance: " + columnsOffsets);
+		if(columnsOffsets.split(",")[0].equals("-2")){
+			DistributedFileSystem dfs = (DistributedFileSystem) fs;
+			columnsOffsets = dfs.dfs.getOffset(split.getLocations()[0], currentBlockId, file.getName());
 			org.apache.hadoop.util.LineReader.conf = job;
-			org.apache.hadoop.util.LineReader.firstBlock = currentBlockId;
 		}
-		else {
-			org.apache.hadoop.util.LineReader.remoteReadAppBlock = false;
-		}
-		
-		if(tweetFileOffset != -1) {
-			this.maxLineLength = job.getInt("mapred.linerecordreader.maxlength", Integer.MAX_VALUE);			
-			FIRST_COLUMN_IDENTIFIER = job.get("first.column.identifier");
 
+		if(!columnsOffsets.split(",")[0].equals("-1")) {
+			this.maxLineLength = job.getInt("mapred.linerecordreader.maxlength", Integer.MAX_VALUE);	
 			start = split.getStart();
 			end = start + split.getLengths().get(currentRowGroupIndex);
 
-			ArrayList<Path> pathsToBlocksOfRelevantSplit = getPathsToRelevantSplit(split.getPaths().get(currentRowGroupIndex), job);
-			final Path file = pathsToBlocksOfRelevantSplit.remove(0);
-
 			compressionCodecs = new CompressionCodecFactory(job);
 			codec = compressionCodecs.getCodec(file);
-
-			// open the file and seek to the start of the split
-			FileSystem fs = file.getFileSystem(job);
 
 			FSDataInputStream fileIn = fs.open(file);
 			int i = 0;
@@ -228,8 +222,8 @@ public class xRecordReader implements RecordReader<LongWritable, Text> {
 				decompressor = CodecPool.getDecompressor(codec);
 				if (!(codec instanceof SplittableCompressionCodec)) {
 					CompressionInputStream is = codec.createInputStream(fileIn, decompressor);
-					if(tweetFileOffset > 0) {
-						is.skip(tweetFileOffset);
+					if(!columnsOffsets.split(",")[0].equals("0")) {
+						is.skip(Long.parseLong(columnsOffsets.split(",")[0]));
 					}
 					in = new LineReader(is, job);
 					filePosition = fileIn;
@@ -238,7 +232,11 @@ public class xRecordReader implements RecordReader<LongWritable, Text> {
 					for (FSDataInputStream fileInN: array2inputStreams) {
 						CompressionCodec codecTmp  = codecN.get(i);
 						Decompressor decompressorTmp = CodecPool.getDecompressor(codecTmp);
-						inN.add(i, new LineReader(codecTmp.createInputStream(fileInN, decompressorTmp), job));
+						CompressionInputStream istmp = codecTmp.createInputStream(fileInN, decompressorTmp);
+						if(!columnsOffsets.split(",")[1].equals("0")) {
+							istmp.skip(Long.parseLong(columnsOffsets.split(",")[1]));
+						}
+						inN.add(i, new LineReader(istmp, job));
 						filePositionN.add(i, fileInN);
 						i++;
 					}
@@ -356,7 +354,7 @@ public class xRecordReader implements RecordReader<LongWritable, Text> {
 			throws IOException {
 		while(currentRowGroupIndex < split.getNumberOfFiles()) {
 			while (getFilePosition() <= end) {
-				if(tweetFileOffset == -1) {
+				if(stop()) {
 					break;
 				}
 				key.set(pos);
@@ -388,8 +386,6 @@ public class xRecordReader implements RecordReader<LongWritable, Text> {
 				value.set(extra + accumulator.toString());
 				pos += newSize;
 
-				n++;
-
 				if (newSize < maxLineLength) {
 					return true;
 				}
@@ -407,6 +403,14 @@ public class xRecordReader implements RecordReader<LongWritable, Text> {
 			openNextFiles();
 		}
 		return false;
+	}
+
+	private boolean stop() {
+		if(job.get("jobName").equals("hadoopplusplus")) {
+			return tweetFileOffset == -1;
+		} else {
+			return columnsOffsets.split(",")[0].equals("-1");
+		}
 	}
 
 	public void close() throws IOException {

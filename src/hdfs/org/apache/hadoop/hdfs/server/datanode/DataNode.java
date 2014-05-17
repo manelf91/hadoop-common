@@ -332,12 +332,6 @@ public class DataNode extends Configured
 	}
 	runHadoopPlusPlus = conf.getBoolean("hadoopplusplus", false);
 	System.out.println("running Hadoop++ ?"  + runHadoopPlusPlus);
-	if(runHadoopPlusPlus == false) {
-		xIndexUtils.initializeIndexBuilderThread();
-	}
-
-	int rowGroupsperNode = conf.getInt("number.of.row.groups", 1)/conf.getInt("number.of.nodes", 1);
-	xIndexUtils.rowGroupsPerNode = rowGroupsperNode;
 	
     this.userWithLocalPathAccess = conf
         .get(DFSConfigKeys.DFS_BLOCK_LOCAL_PATH_ACCESS_USER_KEY);

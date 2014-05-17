@@ -68,8 +68,6 @@ public class SelectionSent extends Configured implements Tool {
 	implements Mapper<LongWritable, Text, Text, Text> {
 
 		private static HashMap<Integer, String> filtersMap = new HashMap<Integer, String>();
-		public static int searching = 0;
-
 		public void configure(JobConf job) {        
 			String filters = job.get("filteredAttrs");
 			if (filters != null) {
@@ -95,14 +93,10 @@ public class SelectionSent extends Configured implements Tool {
 				int attrNr = entry.getKey().intValue();
 				String filter = entry.getValue();
 				if (!args[attrNr].equals(filter)) {
-					if(searching == 1) {
-						xRecordReader.tweetFileOffset = -1;
-					}
+					xRecordReader.columnsOffsets = "-1,-1";
 					return;
 				}
 			}
-			searching = 1;
-			xRecordReader.tweetFileOffset = -1;
 			long start = System.currentTimeMillis();
 			SentimentClassifier sentClassifier = new SentimentClassifier();
 			String text = "";

@@ -32,109 +32,12 @@ public class xIndexUtils {
 	// <attribute nr, <attribute value, blockId>>
 	public static HashMap<String, HashMap<String, BitSet>> index = null;
 
-	//first block of split N -> first block of split N, second block of split N, third block of split N... 
-	private static HashMap<Long, HashMap<Integer, Long>> block2split = new HashMap<Long,  HashMap<Integer, Long>>();
-
-	private static HashMap<Integer, HashMap<Long, Integer>> blockId2BlockNr = new HashMap<Integer, HashMap<Long, Integer>>();
-	private static HashMap<Integer, Integer> blockCnt = new HashMap<Integer, Integer>();
-
-	private static HashMap<Integer, ArrayList<String>> attrNr2Files = new HashMap<Integer, ArrayList<String>>();
-
-	public static BlockingQueue<xBlockQueueItem> queue = new LinkedBlockingQueue<xBlockQueueItem>(200);
-	static Thread indexBuilder = null;
-
-	private static Long blockIdOfFirstBlock;
-	public static int nBlocks = 0;
-
+	public static ArrayList<Long> blocks = new ArrayList<Long>();
 	private static String indexDir = getIndexDir();
-
-	private static HashMap<Integer, String> previousFilters = new HashMap<Integer, String>();
-	private static HashMap<Integer, BitSet> previousRelBlocks = null;
 
 	private static int indexSize = -1;
 
 	public static long mapFunctionTime = 0;
-
-	public static int rowGroupsPerNode;
-
-	static {
-		Object obj = new xIndexUtils();
-		StatisticsAgregator.getInstance().register(obj);
-	}
-
-	public static class IndexBuilder implements Runnable {
-
-		@Override
-		public void run() {
-			while(true) {
-				try {
-					xBlockQueueItem item = queue.take();
-
-					PipedOutputStream pos = item.data;
-					long blockId =item.blockId;
-					Long blockIdL = new Long(blockId);
-					boolean first = item.first;
-					Integer columnNr = new Integer(item.columnNr);
-					//xLog.print("Going to add columnNr " + columnNr.intValue() + " to index");
-
-					openIndexFiles(columnNr);
-
-					int blocknr = updateBlockMap(blockIdL, columnNr);
-
-					if(first) {
-						block2split.put(blockIdL, new HashMap<Integer, Long>());
-						blockIdOfFirstBlock = blockIdL;
-						nBlocks++;
-					}
-
-
-					PipedInputStream pis = item.pis;
-					GZIPInputStream gzis = new GZIPInputStream(pis);
-					BufferedReader br = new BufferedReader(new InputStreamReader(gzis, Charset.forName("UTF-8")));
-
-					String entry = "";
-					while((entry = br.readLine()) != null) {
-						String newEntry = new String(entry);
-						addEntriesToIndex(newEntry, blocknr);
-					}
-
-					HashMap<Integer, Long> split = block2split.get(blockIdOfFirstBlock);
-					split.put(columnNr, blockIdL);
-					//xLog.print("Added columnNr " + columnNr.intValue() + " to index");
-
-					br.close();
-					gzis.close();
-					pis.close();
-					pos.close();
-					writeIndex(columnNr);
-				}
-				catch (Exception e) {
-					e.printStackTrace();
-					System.out.println(e.getMessage());
-				}
-			}
-		}
-	}
-
-	public static int updateBlockMap(Long blockIdL, Integer columnNr) {
-		Integer blockCnt4ColumnNr = blockCnt.get(columnNr);
-		if(blockCnt4ColumnNr == null) {
-			blockCnt4ColumnNr = new Integer(0);
-		}
-		else {
-			int currentCnt = blockCnt4ColumnNr.intValue();
-			blockCnt4ColumnNr = new Integer(currentCnt + 1);
-		}
-		blockCnt.put(columnNr, blockCnt4ColumnNr);
-
-		HashMap<Long, Integer> attrMap = blockId2BlockNr.get(columnNr);
-		if(attrMap == null) {
-			attrMap = new HashMap<Long, Integer>();
-			blockId2BlockNr.put(columnNr, attrMap);
-		}
-		attrMap.put(blockIdL, blockCnt4ColumnNr);
-		return blockCnt4ColumnNr.intValue();
-	}
 
 	private static String getIndexDir() {
 		try {
@@ -150,193 +53,75 @@ public class xIndexUtils {
 		}
 		return "/mnt/indexDir";
 	}
-
-	public static void writeIndex(Integer columnNr) {
-		ArrayList<String> filesList = new ArrayList<String>();
-		FileOutputStream fout;
-		DataOutputStream dos;
-		ObjectOutputStream oos;
+	
+	private static HashMap<String, String> openIndex(String fileName) {
+		HashMap<String, String> index = new HashMap<String, String>();
 		try {
-			for(String hash : index.keySet()) {
-				HashMap<String, BitSet> attrIndex = index.get(hash);
-				filesList.add(hash + "-" + columnNr);
-				fout = new FileOutputStream(indexDir + hash + "-" + columnNr + ".index");
-				dos = new DataOutputStream(fout);
-				oos = new ObjectOutputStream(dos);
-				oos.writeObject(attrIndex);
-				oos.flush();
-				oos.close();
-			}
-		} catch(Exception e) {
-			e.printStackTrace();
-			System.out.println(e.getMessage());
-		}
-		attrNr2Files.put(columnNr, filesList);
-		index = new HashMap<String, HashMap<String,BitSet>>();
-	}
+			File folder = new File(indexDir);
+			File[] listOfFiles = folder.listFiles();			
 
-	public static void openIndexFiles(Integer columnNr) {
-		if(index == null) {
-			removeAllPreviousIndexFiles();
-			index = new HashMap<String, HashMap<String,BitSet>>();
-		}
-		ArrayList<String> filesList = attrNr2Files.get(columnNr);
-		if(filesList == null) {
-			return;
-		}
-		FileInputStream fin;
-		ObjectInputStream ois;
-		try {
-			for (String file : filesList) {
-				fin = new FileInputStream(indexDir + file + ".index");
-				ois = new ObjectInputStream(fin);
-				HashMap<String, BitSet> attrIndex = (HashMap<String, BitSet>) ois.readObject();
-				index.put(file.split("-")[0], attrIndex);
-				fin.close();
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-			System.out.println(e.getMessage());
-		}
-	}
+			for (int i = 0; i < listOfFiles.length; i++) {
+				String file = listOfFiles[i].getName();
+				if(file.equals(fileName+".index")) {
+					FileInputStream fileStream = new FileInputStream(indexDir+fileName+".index");
+					InputStreamReader decoder = new InputStreamReader(fileStream, "UTF-8");
+					BufferedReader reader = new BufferedReader(decoder);
+					String indexString = reader.readLine();
+					indexString = indexString.substring(1, indexString.length()-1);
+					String[] pairs = indexString.split("], ");
+					for (int k = 0; k < pairs.length; k++) {
+						String pair = pairs[k];
+						String[] keyValue = pair.split("=");
 
-	private static void removeAllPreviousIndexFiles() {
-		try {
-			FileUtils.cleanDirectory(new File(indexDir));
-		} catch (IOException e) {
-			e.printStackTrace();
-			System.out.println(e.getMessage());
-		}
-	}
-
-	public static void initializeIndexBuilderThread() {
-		xLog.print("xIndexUtils: Start running IndexBuilderThread\n");
-		indexBuilder = new Thread(new xIndexUtils.IndexBuilder());
-		indexBuilder.start();
-	}
-
-	/*public static void removeIndexEntriesWithMoreThan(int i) {
-		int countRemoved = 0;
-		for (Integer attr : index.keySet()){
-			HashMap<String,  ArrayList<Long>> attrIndex = index.get(attr);
-			Iterator<Map.Entry<String,  ArrayList<Long>>> iter = attrIndex.entrySet().iterator();
-			while (iter.hasNext()) {
-				Map.Entry<String,  ArrayList<Long>> entry = iter.next();
-				ArrayList<Long> blockList = entry.getValue();
-				if(blockList.size() >= i) {
-					System.out.println("Attr :" + attr + " removed " + entry.getKey());
-					iter.remove();
-					countRemoved++;
+						String key = keyValue[0];
+						String value = keyValue[1].substring(1);
+						if(k == pairs.length - 1) {
+							value = value.substring(0, value.length()-1);
+						}
+						
+						String[] values = value.split(", ");
+						String offsets = "";
+						for (int j = 0; j < values.length; j++) {
+							offsets += values[j] + ",";
+						}
+						index.put(key, offsets);
+					}
+					reader.close();
+					return index;
 				}
 			}
-			System.out.println("for attr " + attr + " were removed " + countRemoved + " items");
-			countRemoved = 0;
-		}
-	}*/
-
-	private static void addEntriesToIndex(String entry, int blocknr) {
-		try {
-			String hash = toHex(entry.getBytes());
-			HashMap<String,  BitSet> currentColumnIndex = index.get(hash);
-			if(currentColumnIndex == null) {
-				currentColumnIndex = new HashMap<String, BitSet>();
-				index.put(hash, currentColumnIndex);
-			}
-			BitSet blocksForEntry = currentColumnIndex.get(entry);
-			if(blocksForEntry == null) {
-				blocksForEntry = new  BitSet(rowGroupsPerNode);
-				currentColumnIndex.put(entry, blocksForEntry);
-			}
-			blocksForEntry.set(blocknr);
-		} catch(Exception e) {
-			e.printStackTrace();
-			System.out.println("entry: " + entry);
+		} catch (Exception e) {
 			System.out.println(e.getMessage());
+			e.printStackTrace();
 		}
-	}
-
-	public static ByteArrayOutputStream decompressData(ByteArrayOutputStream compressedData) throws IOException {
-		ByteArrayOutputStream decompressedData = new ByteArrayOutputStream();
-		ByteArrayInputStream bais = new ByteArrayInputStream(compressedData.toByteArray());
-		GZIPInputStream gZIPInputStream = new GZIPInputStream(bais);
-
-		int bytes_read;
-		byte[] buffer = new byte[1024];
-
-		while ((bytes_read = gZIPInputStream.read(buffer)) > 0) {
-			decompressedData.write(buffer, 0, bytes_read);
-		}
-
-		gZIPInputStream.close();
-		decompressedData.close();
-		return decompressedData;
+		return null;
 	}
 
 	//-1=irrelevant, 1=relevant, 0=non_local_block
-	public static int checkIfRelevantRowGroup(HashMap<Integer, String> filters, long blockId) {
+	public static String checkIfRelevantRowGroup(HashMap<Integer, String> filters, String file, long blockId) {
 		if(filters.size() == 0) {
 			//xLog.print("xIndexUtils: There are no filters. Block is relevant");
-			return 1;
+			return "0,0";
 		}
-		synchronized (index) {
+		synchronized (indexDir) {
 			//xLog.print("xIndexUtils: Going to check if row group " + blockId + " is relevant");
-
-			HashMap<Integer, BitSet> relevantBlocksForJob = null;
-			HashMap<Integer, Long> split = (HashMap<Integer, Long>) block2split.get(new Long(blockId));
-
-			if(previousRelBlocks != null && checkSameJob(previousFilters, filters) == true) {
-				relevantBlocksForJob = previousRelBlocks;
-			} else {
-				previousFilters = filters;
-				relevantBlocksForJob = new HashMap<Integer, BitSet>();
-
-				for(Integer attrNr : filters.keySet()) {
-					try{
-						openIndexFiles(attrNr);
-						String filter = filters.get(attrNr);
-						String filterHash = toHex(filter.getBytes());
-						BitSet relevantBlocksForThisFilter = index.get(filterHash).get(filter);
-						relevantBlocksForJob.put(attrNr, relevantBlocksForThisFilter);
-					} catch(Exception e) {
-						e.printStackTrace();
-						System.out.println(e.getMessage());
-					}
-				}
-				previousRelBlocks = relevantBlocksForJob;
+			if(!blocks.contains(blockId)) {
+				return "-2";
 			}
-
-			if(split == null) {
-				//xLog.print("xIndexUtils: Reading a non-local row group: " + blockId);
-				return 0;
-			}
+			HashMap<String, String> index = openIndex(file);
 			for(Integer attrNr : filters.keySet()) {
-				Long blockIdOfAttrNr = split.get(attrNr);
-				Integer blocknr = blockId2BlockNr.get(attrNr).get(blockIdOfAttrNr);
-				BitSet relevantBlocks = relevantBlocksForJob.get(attrNr);
-
-				if((relevantBlocks == null) || (relevantBlocks.get(blocknr.intValue()) == false )) {
-					//xLog.print("xIndexUtils: The row group " + blockId + " is irrelevant");
-					return -1;
+				String filter = filters.get(attrNr);
+				String offset = index.get(filter);
+				if(offset == null) {
+					return "-1";
+				}
+				else {
+					return offset;
 				}
 			}
-
-			//xLog.print("xIndexUtils: The row group " + blockId + " is relevant");
-			return 1;
+			//when does this happen?
+			return "-3";
 		}
-	}
-
-	public static boolean checkSameJob(HashMap<Integer, String> filters1, HashMap<Integer, String> filters2){
-		if(filters1.size() != filters2.size()) {
-			return false;
-		}
-		for(Integer attr1 : filters1.keySet()) {
-			String filter1 = filters1.get(attr1);
-			String filter2 = filters2.get(attr1);
-			if(!filter1.equals(filter2)) {
-				return false;
-			}
-		}
-		return true;
 	}
 
 	public static int getIndexSize() {
@@ -361,7 +146,7 @@ public class xIndexUtils {
 	}
 
 	public static int calcIndexSize() {
-		int size = 0;
+		/*int size = 0;
 		for(ArrayList<String> files : attrNr2Files.values()) {
 			for(String fileName : files) {
 				File f = new File(indexDir + fileName + ".index");
@@ -369,7 +154,8 @@ public class xIndexUtils {
 				size += f.length();
 			}
 		}
-		return size;
+		return size;*/
+		return 0;
 	}
 
 	public static HashMap<Integer, String> buildFiltersMap(Configuration job) {

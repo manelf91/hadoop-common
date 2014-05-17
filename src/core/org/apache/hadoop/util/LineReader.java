@@ -50,11 +50,7 @@ public class LineReader {
 
 	// The line delimiter
 	private final byte[] recordDelimiterBytes;
-	public static boolean remoteReadAppBlock = false;
 	public static Configuration conf;
-	public static long firstBlock;
-
-
 	/**
 	 * Create a line reader that reads from the given stream using the
 	 * default buffer-size (64k).

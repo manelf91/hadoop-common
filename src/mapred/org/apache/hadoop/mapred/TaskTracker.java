@@ -4629,14 +4629,14 @@ Runnable, TaskTrackerMXBean {
 
 	/*mgferreira*/
 	@Override
-	public int checkIfRelevantRowGroup(long blockId, Configuration job) {
+	public String checkIfRelevantRowGroup(long blockId, String file, Configuration job) {
 		HashMap<Integer, String> filtersMap = xIndexUtils.buildFiltersMap(job);
-		return xIndexUtils.checkIfRelevantRowGroup(filtersMap, blockId);
+		return xIndexUtils.checkIfRelevantRowGroup(filtersMap, file, blockId);
 	}	
 	
 	@Override
 	public long checkIfRelevantHadoopTweetFile(String fileName, long blockId, Configuration job) {
-		HashMap<Integer, String> filtersMap = xIndexUtils.buildFiltersMap(job);
+		HashMap<Integer, String> filtersMap = xIndexUtilsHadoop.buildFiltersMap(job);
 		return xIndexUtilsHadoop.checkIfRelevantHadoopTweetFile(filtersMap, fileName, blockId);
 	}
 

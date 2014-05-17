@@ -465,31 +465,12 @@ class BlockReceiver implements java.io.Closeable, FSConstants {
 		if (len == 0) {
 			LOG.debug("Receiving empty packet for " + block);
 			if(createIndex) {
+				if(lastPacketInBlock) {
 				if(datanode.runHadoopPlusPlus == true) {
-					if(lastPacketInBlock) {
 						xIndexUtilsHadoop.blocks.add(block.getBlockId());
+					} else {
+						xIndexUtils.blocks.add(block.getBlockId());
 					}
-				}
-				if(datanode.runHadoopPlusPlus == false) {
-					if(firstPacketInBlock) {
-						currentPipeOutStream = new PipedOutputStream();
-						PipedInputStream pis = new PipedInputStream(currentPipeOutStream, 100*1024*1024);
-						xBlockQueueItem item = new xBlockQueueItem(block.getBlockId(), currentPipeOutStream, pis, currentColumn, first);
-
-						try {
-							xIndexUtils.queue.put(item);
-						} catch (InterruptedException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						}
-
-						firstPacketInBlock = false;
-
-						if(lastPacketInBlock) {
-							currentPipeOutStream.close();
-							firstPacketInBlock = true;
-						}
-					} 
 				}
 			}
 		} else {
@@ -525,32 +506,11 @@ class BlockReceiver implements java.io.Closeable, FSConstants {
 					out.write(pktBuf, dataOff, len);
 
 					if(createIndex) {
+						if(lastPacketInBlock) {
 						if(datanode.runHadoopPlusPlus == true) {
-							if(lastPacketInBlock) {
 								xIndexUtilsHadoop.blocks.add(block.getBlockId());
-							}
-						}
-						if(datanode.runHadoopPlusPlus == false) {
-							if(firstPacketInBlock) {
-								currentPipeOutStream = new PipedOutputStream();
-								PipedInputStream pis = new PipedInputStream(currentPipeOutStream, 100*1024*1024);
-								xBlockQueueItem item = new xBlockQueueItem(block.getBlockId(), currentPipeOutStream, pis, currentColumn, first);
-
-								try {
-									xIndexUtils.queue.put(item);
-								} catch (InterruptedException e) {
-									// TODO Auto-generated catch block
-									e.printStackTrace();
-								}
-
-								currentPipeOutStream.write(pktBuf, dataOff, len);
-								currentPipeOutStream.flush();
-								firstPacketInBlock = false;
-
-							}
-							if(lastPacketInBlock) {
-								currentPipeOutStream.close();
-								firstPacketInBlock = true;
+							} else {
+								xIndexUtils.blocks.add(block.getBlockId());
 							}
 						}
 					}

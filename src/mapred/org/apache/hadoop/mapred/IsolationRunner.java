@@ -134,9 +134,9 @@ public class IsolationRunner {
     }
 
 	@Override
-	public int checkIfRelevantRowGroup(long blockId, Configuration filters) {
+	public String checkIfRelevantRowGroup(long blockId, String file, Configuration job) {
 		// TODO Auto-generated method stub
-		return 0;
+		return "";
 	}
 	
 	@Override

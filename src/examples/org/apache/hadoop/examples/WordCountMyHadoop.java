@@ -176,7 +176,7 @@ public class WordCountMyHadoop extends Configured implements Tool {
 		JobConf conf = new JobConf(getConf(), WordCountMyHadoop.class);
 		String jobName = args[0];
 		conf.setJobName(jobName);
-		conf.set("jobName", "hadoop");
+		conf.set("jobName", "hadoopplusplus");
 
 		String blocksPerSplit = args[1];
 		if(blocksPerSplit.contains("-")) {
@@ -245,12 +245,12 @@ public class WordCountMyHadoop extends Configured implements Tool {
 			conf.setIfUnset("filteredAttrs", filteredAttrs);
 		}
 
-		conf.setIfUnset("useIndexes", args[4]);
+		conf.setIfUnset("useIndexes", "false");
 
 
-		String[] argsN = new String[args.length-5];
-		for (int i = 5; i < args.length; i++) {
-			argsN[i-5] = args[i];
+		String[] argsN = new String[args.length-4];
+		for (int i = 4; i < args.length; i++) {
+			argsN[i-4] = args[i];
 		}
 
 		// the keys are words (strings)

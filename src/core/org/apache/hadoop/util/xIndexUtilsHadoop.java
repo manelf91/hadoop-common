@@ -18,8 +18,6 @@ public class xIndexUtilsHadoop {
 
 	private static String indexDir = getIndexDir();
 	public static ArrayList<Long> blocks = new ArrayList<Long>();
-	
-	static int z = 0;
 
 	private static HashMap<String, Long> openIndex(String fileName) {
 		HashMap<String, Long> index = new HashMap<String, Long>();
@@ -35,7 +33,6 @@ public class xIndexUtilsHadoop {
 					BufferedReader reader = new BufferedReader(decoder);
 					String indexString = reader.readLine();
 					indexString = indexString.substring(1, indexString.length()-1);
-					System.out.println(indexString);
 					String[] pairs = indexString.split(", ");
 					for (int k = 0; k < pairs.length; k++) {
 						String pair = pairs[k];

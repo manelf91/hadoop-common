@@ -26,6 +26,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -255,9 +256,8 @@ class DataXceiver implements Runnable, FSConstants {
 	private void getOffset(DataInputStream in) throws IOException {
 		String fileName = "";
 		long blockId = in.readLong();
-		if(datanode.runHadoopPlusPlus == true) {
-			fileName = Text.readString(in);
-		}
+		fileName = Text.readString(in);
+
 		ObjectInputStream objIn = new ObjectInputStream(in);
 		HashMap<Integer, String> filtersMap = null;
 		try {
@@ -266,16 +266,23 @@ class DataXceiver implements Runnable, FSConstants {
 			System.out.println(e.getMessage());
 			e.printStackTrace();
 		}
-		long offset = -3;
-		if(datanode.runHadoopPlusPlus == true) {
-			offset = xIndexUtilsHadoop.checkIfRelevantHadoopTweetFile(filtersMap, fileName, blockId);
-		} else {
-			offset = xIndexUtils.checkIfRelevantRowGroup(filtersMap, blockId);
-		}
-		
+	
+
 		OutputStream baseStream = NetUtils.getOutputStream(s, datanode.socketWriteTimeout);
 		DataOutputStream out = new DataOutputStream(new BufferedOutputStream(baseStream, SMALL_BUFFER_SIZE));
-		out.writeLong(offset);
+		
+		if(datanode.runHadoopPlusPlus == true) {
+			long offset = -3;
+			offset = xIndexUtilsHadoop.checkIfRelevantHadoopTweetFile(filtersMap, fileName, blockId);
+			out.writeLong(offset);
+
+		} else {
+			String offsets = null;
+			offsets = xIndexUtils.checkIfRelevantRowGroup(filtersMap, fileName, blockId);
+			Text.writeString(out, offsets);
+			/*ObjectOutputStream objOut = new ObjectOutputStream(out);
+			objOut.writeObject(offsets);*/
+		}
 		out.flush();
 		IOUtils.closeStream(out);
 	}
