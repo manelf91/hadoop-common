@@ -128,7 +128,6 @@ public class SelectionSentHadoop extends Configured implements Tool {
 			String text = listdata1.get(19);
 
 			String filter = filtersMap.get(0);
-			System.out.println("record:" + value.toString());
 			if(language.equals(filter)) {
 				SentimentClassifier sentClassifier = new SentimentClassifier();
 				String sent = sentClassifier.classify(text);
