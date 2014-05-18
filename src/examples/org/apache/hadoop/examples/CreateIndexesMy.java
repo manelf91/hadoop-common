@@ -148,7 +148,9 @@ public class CreateIndexesMy extends Configured implements Tool {
 		public int getPartition(Text key, Text value, int numPartitions) {
 			String fileName = key.toString();
 			System.out.println("fileName" + fileName);
-			int number = Integer.parseInt(fileName.substring(0, fileName.indexOf("_")));
+			String s = fileName.substring(0, fileName.indexOf("_"));
+			System.out.println("s: " + s);
+			int number = Integer.parseInt(s);
 			return number%20;
 		}
 	}
