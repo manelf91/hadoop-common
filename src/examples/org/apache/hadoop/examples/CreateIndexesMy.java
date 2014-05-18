@@ -85,6 +85,7 @@ public class CreateIndexesMy extends Configured implements Tool {
 		public void map(LongWritable key, Text value, OutputCollector<Text, Text> output, Reporter reporter) throws IOException {
 			this.output = output;
 			String line = value.toString();
+			System.out.println("line0" + line);
 			if(this.fileName.equals("")) {
 				String fileName = new String(line.substring(0, line.indexOf(",")));
 				System.out.println("fileName1" + fileName);
