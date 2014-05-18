@@ -144,6 +144,7 @@ public class CreateIndexesMy extends Configured implements Tool {
 		@Override
 		public int getPartition(Text key, Text value, int numPartitions) {
 			String fileName = key.toString();
+			System.out.println("fileName" + fileName);
 			int number = Integer.parseInt(fileName.substring(0, fileName.indexOf("_")));
 			return number%20;
 		}
