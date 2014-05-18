@@ -195,8 +195,8 @@ public class xRecordReader implements RecordReader<LongWritable, Text> {
 		xLog.print("xRecordReader: block " + currentBlockId + " relevance: " + columnsOffsets);
 		if(columnsOffsets.split(",")[0].equals("-2")){
 			DistributedFileSystem dfs = (DistributedFileSystem) fs;
-			columnsOffsets = dfs.dfs.getOffset(split.getLocations()[0], currentBlockId, file.getName());
 			org.apache.hadoop.util.LineReader.conf = job;
+			columnsOffsets = dfs.dfs.getOffset(split.getLocations()[0], currentBlockId, file.getName());
 		}
 
 		if(!columnsOffsets.split(",")[0].equals("-1")) {
