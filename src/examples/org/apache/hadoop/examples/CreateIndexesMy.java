@@ -21,6 +21,7 @@ package org.apache.hadoop.examples;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.charset.Charset;
@@ -75,19 +76,24 @@ public class CreateIndexesMy extends Configured implements Tool {
 	 */
 	public static class MapClass extends MapReduceBase
 	implements Mapper<LongWritable, Text, Text, Text> {
-		
+
 		private HashMap<String, ArrayList<Long>> offsets = new HashMap<String, ArrayList<Long>>();
 		private long currentOffsetLang = 0;
 		private long currentOffsetText = 0;
 		OutputCollector<Text, Text> output;
 		String fileName = "";
+		String node = "";
 
 		public void map(LongWritable key, Text value, OutputCollector<Text, Text> output, Reporter reporter) throws IOException {
 			this.output = output;
 			String line = value.toString();
 			if(this.fileName.equals("")) {
-				String fileName = new String(line.substring(0, line.indexOf(",")));
+				String fileName = new String(line.substring(line.indexOf(";")+1, line.indexOf(",")));
 				this.fileName = fileName;
+			}
+			if(this.node.equals("")) {
+				String node = new String(line.substring(0, line.indexOf(";")));
+				this.node = node;
 			}
 			String language = new String(line.substring(line.indexOf(",")+1, line.indexOf(";$;#;")));
 			String text = new String(line.substring(line.indexOf(";$;#;")+5));
@@ -104,7 +110,10 @@ public class CreateIndexesMy extends Configured implements Tool {
 
 		@Override
 		public void close() throws IOException {
-			output.collect(new Text(fileName), new Text(offsets.toString()));
+			for(String lang : offsets.keySet()) {
+				ArrayList<Long> offsetsForThisEntry = offsets.get(lang);
+				output.collect(new Text(node), new Text(fileName + "," + lang + ";" + offsetsForThisEntry.toString()));
+			}
 		}
 	}
 
@@ -114,40 +123,84 @@ public class CreateIndexesMy extends Configured implements Tool {
 	public static class Reduce extends MapReduceBase
 	implements Reducer<Text, Text, Text, Text> {
 		private MultipleOutputs mos;
+		private String node;
+		private Reporter reporter;
 
+		//hash(lang), <lang, <file, offsets>>
+		HashMap<String, HashMap<String, HashMap<String, String>>> offsetsMap = new HashMap<String, HashMap<String, HashMap<String, String>>>();
+
+		
 		public void configure(JobConf conf) {
 			mos = new MultipleOutputs(conf);
+		}
+		
+		public static String toHex(byte[] bytes) {
+			BigInteger bi = new BigInteger(1, bytes);
+			String completedHash = String.format("%0" + (bytes.length << 1) + "X", bi);
+			String hash = completedHash.substring(completedHash.length()-2, completedHash.length());
+			return hash;
 		}
 
 		public void reduce(Text key, Iterator<Text> values, OutputCollector<Text, Text> output, 
 				Reporter reporter) throws IOException {
-			String fileName = key.toString();
-			fileName = fileName.substring(0, fileName.length()-3);
-			fileName = fileName.replace("_", "");
-
-
+			this.node = key.toString();
+			if(this.node.contains("manuelgf")) {
+				this.node = "manuelgf";
+			} else {
+				this.node = node.substring(0, node.indexOf("."));
+			}
+			this.reporter = reporter;
+			
 			while (values.hasNext()) {
-				String offsets = values.next().toString();
-				mos.getCollector("index", fileName + "index", reporter).collect(new Text(offsets), NullWritable.get());
+				String value = values.next().toString();
+				String fileName = value.substring(0, value.indexOf(","));
+				String lang = value.substring(value.indexOf(",")+1, value.indexOf(";"));
+				String hashLang = toHex(lang.getBytes());
+				String offsets = value.substring(value.indexOf(";")+1);
+				
+				HashMap<String, HashMap<String, String>> offsetsForThisHash = offsetsMap.get(hashLang);
+				if(offsetsForThisHash == null) {
+					offsetsForThisHash = new HashMap<String, HashMap<String, String>>();
+					offsetsMap.put(hashLang, offsetsForThisHash);
+				}
+				HashMap<String, String> offsetsForThisEntry = offsetsForThisHash.get(lang);
+				if(offsetsForThisEntry == null) {
+					offsetsForThisEntry = new HashMap<String, String>();
+					offsetsForThisHash.put(lang, offsetsForThisEntry);
+				}
+				offsetsForThisEntry.put(fileName, offsets);
 			}
 		}
 		public void close() throws IOException {
+			for(String hash : offsetsMap.keySet()) {
+				HashMap<String, HashMap<String, String>> offsetsForThisHash = offsetsMap.get(hash);
+				mos.getCollector("index", node + hash + "index", reporter).collect(new Text(offsetsForThisHash.toString()), NullWritable.get());
+			}
 			mos.close();
 		}
 	}
 
 	public static class MyPartitioner implements Partitioner<Text, Text> {	
+		HashMap<String, Integer> partitions = new HashMap<String, Integer>();
+
 		public MyPartitioner(){}
 
 		@Override
-		public void configure(JobConf job) {}
+		public void configure(JobConf job) {
+			String nodes = job.get("nodes");
+			String[] nodeList = nodes.split(",");
+			int i = 0;
+			for(String node : nodeList) {
+				partitions.put(node, new Integer(i));
+				i++;
+			}
+			System.out.println(partitions.toString());
+		}
 
 		@Override
 		public int getPartition(Text key, Text value, int numPartitions) {
-			String fileName = key.toString();
-			String s = fileName.substring(0, fileName.indexOf("_"));
-			int number = Integer.parseInt(s);
-			return number%20;
+			String node = key.toString();
+			return partitions.get(node);
 		}
 	}
 
@@ -174,6 +227,14 @@ public class CreateIndexesMy extends Configured implements Tool {
 
 		String relevantAttrs = "";
 		String filteredAttrs = "";
+
+		BufferedReader br1 = new BufferedReader(new FileReader("names"));
+		String node;
+		String nodes = "";
+		while ((node = br1.readLine()) != null) {
+			nodes += node + ",";
+		}
+		conf.setIfUnset("nodes", nodes);
 
 		BufferedReader br = new BufferedReader(new FileReader(args[1]));
 		String pred;
@@ -202,8 +263,8 @@ public class CreateIndexesMy extends Configured implements Tool {
 		System.out.println("relevantAttrs: " + relevantAttrs);
 		System.out.println("filteredAttrs: " + filteredAttrs);
 		conf.setIfUnset("relevantAttrs", relevantAttrs);
-		conf.setJobName("sort");
-		conf.set("jobName", "sort");
+		conf.setJobName("createIndexes");
+		conf.set("jobName", "createIndexes");
 		if (!filteredAttrs.equals("")) {
 			conf.setIfUnset("filteredAttrs", filteredAttrs);
 		}

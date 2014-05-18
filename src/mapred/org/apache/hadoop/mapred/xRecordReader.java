@@ -222,8 +222,8 @@ public class xRecordReader implements RecordReader<LongWritable, Text> {
 				decompressor = CodecPool.getDecompressor(codec);
 				if (!(codec instanceof SplittableCompressionCodec)) {
 					CompressionInputStream is = codec.createInputStream(fileIn, decompressor);
-					if(!columnsOffsets.split(",")[0].equals("0")) {
-						is.skip(Long.parseLong(columnsOffsets.split(",")[0]));
+					if(!columnsOffsets.split(", ")[0].equals("0")) {
+						is.skip(Long.parseLong(columnsOffsets.split(", ")[0]));
 					}
 					in = new LineReader(is, job);
 					filePosition = fileIn;
@@ -233,8 +233,8 @@ public class xRecordReader implements RecordReader<LongWritable, Text> {
 						CompressionCodec codecTmp  = codecN.get(i);
 						Decompressor decompressorTmp = CodecPool.getDecompressor(codecTmp);
 						CompressionInputStream istmp = codecTmp.createInputStream(fileInN, decompressorTmp);
-						if(!columnsOffsets.split(",")[1].equals("0")) {
-							istmp.skip(Long.parseLong(columnsOffsets.split(",")[1]));
+						if(!columnsOffsets.split(", ")[1].equals("0")) {
+							istmp.skip(Long.parseLong(columnsOffsets.split(", ")[1]));
 						}
 						inN.add(i, new LineReader(istmp, job));
 						filePositionN.add(i, fileInN);
@@ -382,6 +382,10 @@ public class xRecordReader implements RecordReader<LongWritable, Text> {
 				String extra = "";
 				if(job.get("jobName").equals("sort")){
 					extra = split.getPaths().get(currentRowGroupIndex).getName() + ",";
+				}
+				if(job.get("jobName").equals("createIndexes")){
+					extra = split.getLocations()[0] + ";";
+					extra += split.getPaths().get(currentRowGroupIndex).getName() + ",";
 				}
 				value.set(extra + accumulator.toString());
 				pos += newSize;

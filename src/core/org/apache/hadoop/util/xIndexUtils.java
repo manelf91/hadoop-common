@@ -39,6 +39,9 @@ public class xIndexUtils {
 
 	public static long mapFunctionTime = 0;
 
+	private static HashMap<Integer, String> previousFilters = new HashMap<Integer, String>();
+	private static HashMap<String, String> previousRelFiles = null;
+
 	private static String getIndexDir() {
 		try {
 			if(InetAddress.getLocalHost().getHostName().contains("manuel")) {
@@ -53,40 +56,45 @@ public class xIndexUtils {
 		}
 		return "/mnt/indexDir";
 	}
-	
-	private static HashMap<String, String> openIndex(String fileName) {
-		HashMap<String, String> index = new HashMap<String, String>();
+
+	private static HashMap<String, HashMap<String, String>> openIndex(String hash) {
+		HashMap<String, HashMap<String, String>> index = new HashMap<String, HashMap<String, String>>();
 		try {
 			File folder = new File(indexDir);
 			File[] listOfFiles = folder.listFiles();			
 
 			for (int i = 0; i < listOfFiles.length; i++) {
 				String file = listOfFiles[i].getName();
-				if(file.equals(fileName+".index")) {
-					FileInputStream fileStream = new FileInputStream(indexDir+fileName+".index");
+				if(file.equals(hash+".index")) {
+					FileInputStream fileStream = new FileInputStream(indexDir+hash+".index");
 					InputStreamReader decoder = new InputStreamReader(fileStream, "UTF-8");
 					BufferedReader reader = new BufferedReader(decoder);
 					String indexString = reader.readLine();
 					indexString = indexString.substring(1, indexString.length()-1);
-					String[] pairs = indexString.split("], ");
-					for (int k = 0; k < pairs.length; k++) {
-						String pair = pairs[k];
-						String[] keyValue = pair.split("=");
+					String[] filters = indexString.split("}, ");
+					for (int k = 0; k < filters.length; k++) {
+						String pair = filters[k];
 
-						String key = keyValue[0];
-						String value = keyValue[1].substring(1);
-						if(k == pairs.length - 1) {
-							value = value.substring(0, value.length()-1);
+						String filter = pair.substring(0, pair.indexOf("="));
+						HashMap<String, String> mapForThisFilter = new HashMap<String, String>();
+
+						String files = pair.substring(pair.indexOf("=")+1);
+						files = files.substring(1, files.length()-1);
+
+						String[] filesArr = files.split("], ");	
+
+						for(int j = 0; j < filesArr.length; j++) {
+							String fileN = filesArr[j].split("=")[0];
+							String offsetN = filesArr[j].split("=")[1].substring(1) ;
+							if(j == filesArr.length - 1) {
+								offsetN = offsetN.substring(0, offsetN.length()-1);
+							}
+							mapForThisFilter.put(fileN, offsetN);
 						}
-						
-						String[] values = value.split(", ");
-						String offsets = "";
-						for (int j = 0; j < values.length; j++) {
-							offsets += values[j] + ",";
-						}
-						index.put(key, offsets);
+						index.put(filter, mapForThisFilter);
 					}
 					reader.close();
+					System.out.println(index);
 					return index;
 				}
 			}
@@ -101,26 +109,38 @@ public class xIndexUtils {
 	public static String checkIfRelevantRowGroup(HashMap<Integer, String> filters, String file, long blockId) {
 		if(filters.size() == 0) {
 			//xLog.print("xIndexUtils: There are no filters. Block is relevant");
-			return "0,0";
+			return "0, 0";
 		}
 		synchronized (indexDir) {
 			//xLog.print("xIndexUtils: Going to check if row group " + blockId + " is relevant");
 			if(!blocks.contains(blockId)) {
 				return "-2";
 			}
-			HashMap<String, String> index = openIndex(file);
-			for(Integer attrNr : filters.keySet()) {
-				String filter = filters.get(attrNr);
-				String offset = index.get(filter);
-				if(offset == null) {
-					return "-1";
+			HashMap<String, String> relevantFilesForJob = null;
+			if(previousRelFiles != null && checkSameJob(previousFilters, filters) == true) {
+				relevantFilesForJob = previousRelFiles;
+			} else {
+				previousFilters = filters;
+				relevantFilesForJob = new HashMap<String, String>();
+
+				for(Integer attrNr : filters.keySet()) {
+					String filter = filters.get(attrNr);
+					String filterHash = toHex(filter.getBytes());
+					HashMap<String, HashMap<String, String>> index = openIndex(filterHash);
+					relevantFilesForJob = index.get(filter);
 				}
-				else {
-					return offset;
-				}
+				previousRelFiles = relevantFilesForJob;
 			}
-			//when does this happen?
-			return "-3";
+			if(relevantFilesForJob == null) {
+				return "-1";
+			}
+			String offset = relevantFilesForJob.get(file);
+			if(offset == null) {
+				return "-1";
+			}
+			else {
+				return offset;
+			}
 		}
 	}
 
@@ -156,6 +176,20 @@ public class xIndexUtils {
 		}
 		return size;*/
 		return 0;
+	}
+
+	public static boolean checkSameJob(HashMap<Integer, String> filters1, HashMap<Integer, String> filters2){
+		if(filters1.size() != filters2.size()) {
+			return false;
+		}
+		for(Integer attr1 : filters1.keySet()) {
+			String filter1 = filters1.get(attr1);
+			String filter2 = filters2.get(attr1);
+			if(!filter1.equals(filter2)) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	public static HashMap<Integer, String> buildFiltersMap(Configuration job) {

@@ -105,7 +105,7 @@ public class SelectionSent extends Configured implements Tool {
 			}
 			String sent = sentClassifier.classify(text);
 			output.collect(new Text(args[0]), new Text(sent));
-			
+
 			long end = System.currentTimeMillis();
 			MapTask.increaseMapFunctionTime(end-start);
 		}
