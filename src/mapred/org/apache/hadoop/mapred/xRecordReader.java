@@ -185,7 +185,7 @@ public class xRecordReader implements RecordReader<LongWritable, Text> {
 		if(useIndexes) {
 			columnsOffsets = MapTask.relevantRowGroup(currentBlockId, file.getName(), job);
 		} else {
-			columnsOffsets = "0,0";
+			columnsOffsets = "0, 0";
 		}
 
 		array2inputStreams.clear();
