@@ -87,6 +87,8 @@ public class CreateIndexesMy extends Configured implements Tool {
 			String line = value.toString();
 			if(this.fileName.equals("")) {
 				String fileName = new String(line.substring(0, line.indexOf(",")));
+				System.out.println("fileName1" + fileName);
+				System.out.println("line" + line);
 				this.fileName = fileName;
 			}
 			String language = new String(line.substring(line.indexOf(",")+1, line.indexOf(";$;#;")));
