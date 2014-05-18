@@ -85,11 +85,12 @@ public class CreateIndexesMy extends Configured implements Tool {
 		public void map(LongWritable key, Text value, OutputCollector<Text, Text> output, Reporter reporter) throws IOException {
 			this.output = output;
 			String line = value.toString();
+			if(this.fileName.equals("")) {
+				String fileName = new String(line.substring(0, line.indexOf(",")));
+				this.fileName = fileName;
+			}
 			String language = new String(line.substring(line.indexOf(",")+1, line.indexOf(";$;#;")));
 			String text = new String(line.substring(line.indexOf(";$;#;")+5));
-
-			String fileName = new String(line.substring(0, line.indexOf(",")));
-			this.fileName = fileName;
 
 			if(!offsets.containsKey(language)) {				
 				ArrayList<Long> offsetsForThisEntry = new ArrayList<Long>();
