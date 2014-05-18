@@ -189,8 +189,6 @@ public class DFSClient implements FSConstants, java.io.Closeable {
 		out.flush();
 
 		DataInputStream in = new DataInputStream(new BufferedInputStream(NetUtils.getInputStream(s1)));
-		
-		ObjectInputStream objIn = new ObjectInputStream(in);
 		String offsets = null;
 		try {
 			offsets = Text.readString(in);
