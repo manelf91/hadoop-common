@@ -85,11 +85,8 @@ public class CreateIndexesMy extends Configured implements Tool {
 		public void map(LongWritable key, Text value, OutputCollector<Text, Text> output, Reporter reporter) throws IOException {
 			this.output = output;
 			String line = value.toString();
-			System.out.println("line0" + line);
 			if(this.fileName.equals("")) {
 				String fileName = new String(line.substring(0, line.indexOf(",")));
-				System.out.println("fileName1" + fileName);
-				System.out.println("line" + line);
 				this.fileName = fileName;
 			}
 			String language = new String(line.substring(line.indexOf(",")+1, line.indexOf(";$;#;")));
@@ -148,9 +145,7 @@ public class CreateIndexesMy extends Configured implements Tool {
 		@Override
 		public int getPartition(Text key, Text value, int numPartitions) {
 			String fileName = key.toString();
-			System.out.println("fileName" + fileName);
 			String s = fileName.substring(0, fileName.indexOf("_"));
-			System.out.println("s: " + s);
 			int number = Integer.parseInt(s);
 			return number%20;
 		}
