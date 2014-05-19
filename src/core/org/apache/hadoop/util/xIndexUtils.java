@@ -80,7 +80,9 @@ public class xIndexUtils {
 
 						String files = pair.substring(pair.indexOf("=")+1);
 						files = files.substring(1, files.length()-1);
-
+						if(filters.length == 1) {
+							files = files.substring(0, files.length()-1);
+						}
 						String[] filesArr = files.split("], ");	
 
 						for(int j = 0; j < filesArr.length; j++) {
