@@ -85,10 +85,7 @@ public class xIndexUtils {
 
 						for(int j = 0; j < filesArr.length; j++) {
 							String fileN = filesArr[j].split("=")[0];
-							String offsetN = filesArr[j].split("=")[1].substring(1) ;
-							if(j == filesArr.length - 1) {
-								offsetN = offsetN.substring(0, offsetN.length()-1);
-							}
+							String offsetN = filesArr[j].split("=")[1].substring(1);
 							mapForThisFilter.put(fileN, offsetN);
 						}
 						index.put(filter, mapForThisFilter);
