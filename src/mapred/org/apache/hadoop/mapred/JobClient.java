@@ -1083,7 +1083,7 @@ public class JobClient extends Configured implements MRConstants, Tool  {
     (org.apache.hadoop.mapred.xFileSplit[]) job.getInputFormat().getSplits(job, job.getNumMapTasks());
     // sort the splits into order based on size, so that the biggest
     // go first
-    Arrays.sort(splits, new Comparator<org.apache.hadoop.mapred.xFileSplit>() {
+    /*Arrays.sort(splits, new Comparator<org.apache.hadoop.mapred.xFileSplit>() {
       public int compare(org.apache.hadoop.mapred.xFileSplit a,
                          org.apache.hadoop.mapred.xFileSplit b) {
         long left = a.getNumberOfFiles();
@@ -1101,7 +1101,7 @@ public class JobClient extends Configured implements MRConstants, Tool  {
             return -1;
           }
       }
-    });
+    });*/
     JobSplitWriter.createSplitFiles(jobSubmitDir, job,
         jobSubmitDir.getFileSystem(job), (org.apache.hadoop.mapred.InputSplit[]) splits);
     return splits.length;
