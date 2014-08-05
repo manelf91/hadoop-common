@@ -128,8 +128,11 @@ public class xIndexUtils {
 					HashMap<String, HashMap<String, String>> index = openIndex(filterHash);
 					
 					if(index == null) {
-						relevantFilesForJob = index.get(filter);
+						relevantFilesForJob = null;
+						previousRelFiles = null;
+						return "-1";
 					}
+					relevantFilesForJob = index.get(filter);
 				}
 				previousRelFiles = relevantFilesForJob;
 			}
