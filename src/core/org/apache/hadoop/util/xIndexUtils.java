@@ -126,7 +126,10 @@ public class xIndexUtils {
 					String filter = filters.get(attrNr);
 					String filterHash = toHex(filter.getBytes());
 					HashMap<String, HashMap<String, String>> index = openIndex(filterHash);
-					relevantFilesForJob = index.get(filter);
+					
+					if(index == null) {
+						relevantFilesForJob = index.get(filter);
+					}
 				}
 				previousRelFiles = relevantFilesForJob;
 			}
